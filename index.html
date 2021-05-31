@@ -1,177 +1,702 @@
 
-
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <title>МИНИСТЕРСТВО ВНУТРЕННИХ ДЕЛ ДОНЕЦКОЙ НАРОДНОЙ РЕСПУБЛИКИ</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link rel="shortcut icon" href="/public/image/shevron_malenkiy_sayt_2.png" type="image/png" />
+        <link rel="stylesheet" href="/build/vendors-node_modules_fancyapps_fancybox_dist_jquery_fancybox_js-node_modules_bootstrap_dist_j-331d09.css"><link rel="stylesheet" href="/build/app.css">
+            </head>
+    <body>
+        <div class=""><header id="header" class="menu">
+    <div class="row container">
+        <a class="logo mx-1" href="/" title="Главная">
+            <img class="" src="/public/image/shevron_malenkiy_sayt.png" alt="лого мвд"/>
+        </a>
+        <div class="mx-1">
+            <div class="site-name__wrapper">
+                <h2 class="site-name" title="Главная"><a href="/" class="site-name">МИНИСТЕРСТВО ВНУТРЕННИХ ДЕЛ ДОНЕЦКОЙ
+                        НАРОДНОЙ РЕСПУБЛИКИ</a></h2>
+                <div class="ml-auto mr-2 mb-1">
+                    <a  title="Youtube" class="header-social-link" href="https://www.youtube.com/channel/UCuTE7TOkskAwWiCnoBAnNZg" target="_blank"
+                      rel="noopener nofollow"><i class="fab fa-youtube"></i></a>
+                    <a title="Instagram" class="header-social-link " href="https://www.instagram.com/newsmvddnr/"
+                       target="_blank" rel="noopener nofollow"><i class="fab fa-instagram"></i></a>
+                <a  title="Telegram" class="header-social-link" href="https://t.me/news_mvddnr" target="_blank"
+                    rel="noopener nofollow"><i class="fab fa-telegram"></i></a>
+                <a  title="Одноклассники" class="header-social-link" href="https://ok.ru/mvddnr/topics" target="_blank"
+                    rel="noopener nofollow"><i class="fab fa-odnoklassniki"></i></a>
+                </div>
+            </div>
 
-<head>
+            <nav class="navbar navbar-expand-lg col-12">
+                <button class="navbar-toggler " type="button" data-toggle="collapse"
+                        data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"><i class="fas fa-bars fa-2x"></i></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                               aria-expanded="false" href="/">Главная<span
+                                        class="sr-only">Главная</span></a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                <li><a class="dropdown-item nav-link" href="/news">Новости</a></li>
+                                <li><a class="dropdown-item nav-link" href="/videos">Видео</a></li>
+                                <li><a class="dropdown-item nav-link" href="/gallery">Галерея</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                               aria-expanded="true" href=""
+                               id="navbarDropdownMenuLink2">О Министерстве</a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink2">
+                                <li><a class="dropdown-item nav-link"
+                                       href="/about-ministry">О Министерстве</a></li>
+                                <li><a class="dropdown-item nav-link"
+                                       href="/contacts">Контакты</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                               aria-expanded="true"
+                               id="documents" href="/documents">Документы</a>
+                            <ul class="dropdown-menu" aria-labelledby="documents">
+                                <li><a class="dropdown-item nav-link"
+                                       href="/documents">Документы</a></li>
+                                <li><a class="dropdown-item nav-link"
+                                       href="/announcement">Объявления</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/public-reception">Общественная
+                                приемная<span class="sr-only">Общественная приемная</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://xn--b1ab8ak.xn--b1aea3ais.xn--p1acf">ГСВО</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://xn--l1ak.xn--b1aea3ais.xn--p1acf/">Миграционная служба</a>
+                        </li>
+                        <li title="Телепрограмма МВД ДНР 102" class="nav-item d-flex align-items-center mx-2"><a
+                                    href="/teleprogramma"><i
+                                        class="fas fa-tv fa"></i></a></li>
+                        <li class="nav-item fake-search mx-2"  data-toggle="collapse" aria-expanded="true" aria-controls="collapseOne" data-target="#search-block-form"><i class="icon-search fas fa-search"></i></li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <form class="form-search collapse" action="/search" method="post" id="search-block-form" accept-charset="UTF-8">
+            <div class="d-flex justify-content-center align-items-center">
+                <input title="Введите ключевые слова для поиска." placeholder="Поиск" class="w-75" type="text" id="" name="term" value="" minlength="3" size="15" maxlength="128" />
+                <button class="btn btn-inverse" type="submit" id="edit-submit" name="op" value="Поиск"><i class="text-white fas fa-search fa-2x"></i></button>
+            </div>
+        </form>
+    </div>
 
-  <meta charset="UTF-8">
-  
-<link rel="apple-touch-icon" type="image/png" href="https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png" />
-<meta name="apple-mobile-web-app-title" content="kurators">
+</header>
 
-<link rel="shortcut icon" type="image/x-icon" href="https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico" />
+<div class="feedback-button d-none d-md-block">
+    <div class="text">
+        Обратная связь </div>
+</div>
+<div class="feedback d-none d-md-block">
+    <div class="region region-feedback">
+        <section id="block-panels-mini-feedback" class="block block-panels-mini clearfix">
 
-<link rel="mask-icon" type="" href="https://cpwebassets.codepen.io/assets/favicon/logo-pin-8f3771b1072e3c38bd662872f6b673a722f4b3ca2421637d5596661b4e2132cc.svg" color="#111" />
+            <div class="panel-display panel-1col clearfix" id="mini-panel-feedback">
+                <div class="panel-panel panel-col">
+                    <div>
+                        <section id="block-block-23" class="block block-block clearfix">
 
+                            <table class="feedback-content">
+                                <tbody>
+                                <tr>
+                                    <th colspan="2">Общественная приемная</th>
+                                </tr>
+                                <tr>
+                                    <td style="width:75px">Адрес:</td>
+                                    <td>ул. Горького, 61</td>
+                                </tr>
+                                <tr>
+                                    <td style="width:75px">
+                                        <p>E-mail:</p>
+                                    </td>
+                                    <td>
+                                        <p><a href="mailto:udo.mvddnr@mail.ru">udo.mvddnr@mail.ru</a></p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:75px">Телефон:</td>
+                                    <td>
+                                        <p>+38(062)301-85-38</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" style="display:block; width:100%"><a class="report-error" href="report-an-error.html">Сообщить об ошибке</a></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    </div>
+                </div>
+            </div>
 
-  <title>Кураторы</title>
-  
-  
-  <link rel='stylesheet' href='https://www.littlesnippets.net/css/codepen-result.css'>
-  
-<style>
-@import url(https://fonts.googleapis.com/css?family=Roboto:300,400,600);
-.snip1336 {
-  font-family: 'Roboto', Arial, sans-serif;
-  position: relative;
-  overflow: hidden;
-  margin: 10px;
-  min-width: 230px;
-  max-width: 315px;
-  width: 100%;
-  color: #ffffff;
-  text-align: left;
-  line-height: 1.4em;
-  background-color: #141414;
-}
-.snip1336 * {
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  -webkit-transition: all 0.25s ease;
-  transition: all 0.25s ease;
-}
-.snip1336 img {
-  max-width: 100%;
-  vertical-align: top;
-  opacity: 0.85;
-}
-.snip1336 figcaption {
-  width: 100%;
-  background-color: #141414;
-  padding: 25px;
-  position: relative;
-}
-.snip1336 figcaption:before {
-  position: absolute;
-  content: '';
-  bottom: 100%;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 55px 0 0 400px;
-  border-color: transparent transparent transparent #141414;
-}
-.snip1336 figcaption a {
-  padding: 5px;
-  border: 1px solid #ffffff;
-  color: #ffffff;
-  font-size: 0.7em;
-  text-transform: uppercase;
-  margin: 10px 0;
-  display: inline-block;
-  opacity: 0.65;
-  width: 47%;
-  text-align: center;
-  text-decoration: none;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-.snip1336 figcaption a:hover {
-  opacity: 1;
-}
-.snip1336 .profile {
-  border-radius: 50%;
-  position: absolute;
-  bottom: 100%;
-  left: 25px;
-  z-index: 1;
-  max-width: 90px;
-  opacity: 1;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-}
-.snip1336 .follow {
-  margin-right: 4%;
-  border-color: #2980b9;
-  color: #2980b9;
-}
-.snip1336 h2 {
-  margin: 0 0 5px;
-  font-weight: 300;
-}
-.snip1336 h2 span {
-  display: block;
-  font-size: 0.5em;
-  color: #2980b9;
-}
-.snip1336 p {
-  margin: 0 0 10px;
-  font-size: 0.8em;
-  letter-spacing: 1px;
-  opacity: 0.8;
-}
-</style>
+        </section>
+    </div>
+</div></div>
+    <div class=" header-buffer"></div>
+        <div class="main">
+            <section  class="container mt-3">
+                    <div class="view-content row">
+                        <div class="js-one-time col-12 col-md-7">
+                                                        <div class="slide-item">
+                                <div class="views-field views-field-field-teaser-img">
+                                    <div class="field-content">
+                                                                                    <a href="/news/vnimanie-rozysk-229" aria-label="Читать Внимание, розыск!"><img class="img-responsive"  src="/uploads/fbc85743f3227fec3d924e14dda0687d.jpeg"  alt="роз 31.00_00_58_12.Still001.jpg" /></a>
+                                                                                <a href='/news' aria-label="Страница новостей"><div class="view-footer">Все новости</div></a>
+                                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                                            </div>
+                                </div>
+                                <div class="views-field views-field-title">
+                                    <span class="field-title mt-2">
+                                        <a href="/news/vnimanie-rozysk-229" aria-label="Читать Внимание, розыск!">Внимание, розыск!</a>
+                                    </span>
+                                </div>
+                            </div>
+                                                        <div class="slide-item">
+                                <div class="views-field views-field-field-teaser-img">
+                                    <div class="field-content">
+                                                                                    <a href="/news/vnimanie-rozysk-228" aria-label="Читать Внимание, розыск!"><img class="img-responsive"  src="/uploads/40ebe08450746ed3682be334dfd3c240.jpeg"  alt="Мошенница памятники Гвардейка.00_03_46_18.Still001.jpg" /></a>
+                                                                                <a href='/news' aria-label="Страница новостей"><div class="view-footer">Все новости</div></a>
+                                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                                            </div>
+                                </div>
+                                <div class="views-field views-field-title">
+                                    <span class="field-title mt-2">
+                                        <a href="/news/vnimanie-rozysk-228" aria-label="Читать Внимание, розыск!">Внимание, розыск!</a>
+                                    </span>
+                                </div>
+                            </div>
+                                                        <div class="slide-item">
+                                <div class="views-field views-field-field-teaser-img">
+                                    <div class="field-content">
+                                                                                    <a href="/news/sk-gvardeets-oderzhal-ocherednuiu-pobedu-v-premer-lige-dnr" aria-label="Читать СК «Гвардеец» одержал очередную победу в Премьер-Лиге ДНР"><img class="img-responsive"  src="/uploads/8334d81246f5277b4ac9b9f621fa17d7.jpeg"  alt="Гвардеец - Моспино.00_02_32_24.Still002.jpg" /></a>
+                                                                                <a href='/news' aria-label="Страница новостей"><div class="view-footer">Все новости</div></a>
+                                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                                            </div>
+                                </div>
+                                <div class="views-field views-field-title">
+                                    <span class="field-title mt-2">
+                                        <a href="/news/sk-gvardeets-oderzhal-ocherednuiu-pobedu-v-premer-lige-dnr" aria-label="Читать СК «Гвардеец» одержал очередную победу в Премьер-Лиге ДНР">СК «Гвардеец» одержал очередную победу в Премьер-Лиге ДНР</a>
+                                    </span>
+                                </div>
+                            </div>
+                                                        <div class="slide-item">
+                                <div class="views-field views-field-field-teaser-img">
+                                    <div class="field-content">
+                                                                                    <a href="/news/teleprogramma-mvd-dnr-102-ot-29-05-2021-g" aria-label="Читать Телепрограмма МВД ДНР &quot;102&quot; от 29 05.2021 г."><img class="img-responsive"  src="/uploads/3a61fba928604ca6105873131f2442b8.jpeg"  alt="102 тизер.jpg" /></a>
+                                                                                <a href='/news' aria-label="Страница новостей"><div class="view-footer">Все новости</div></a>
+                                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                                            </div>
+                                </div>
+                                <div class="views-field views-field-title">
+                                    <span class="field-title mt-2">
+                                        <a href="/news/teleprogramma-mvd-dnr-102-ot-29-05-2021-g" aria-label="Читать Телепрограмма МВД ДНР &quot;102&quot; от 29 05.2021 г.">Телепрограмма МВД ДНР &quot;102&quot; от 29 05.2021 г.</a>
+                                    </span>
+                                </div>
+                            </div>
+                                                        <div class="slide-item">
+                                <div class="views-field views-field-field-teaser-img">
+                                    <div class="field-content">
+                                                                                    <a href="/news/vsya-pravda-o-smerti-nachalnika-debalcevskoy-milicii" aria-label="Читать Вся правда о смерти начальника Дебальцевской милиции"><img class="img-responsive"  src="/uploads/old/news-teasers/2017/06/yuhanov111.jpg"  alt="yuhanov111.jpg" /></a>
+                                                                                <a href='/news' aria-label="Страница новостей"><div class="view-footer">Все новости</div></a>
+                                                                            </div>
+                                </div>
+                                <div class="views-field views-field-title">
+                                    <span class="field-title mt-2">
+                                        <a href="/news/vsya-pravda-o-smerti-nachalnika-debalcevskoy-milicii" aria-label="Читать Вся правда о смерти начальника Дебальцевской милиции">Вся правда о смерти начальника Дебальцевской милиции</a>
+                                    </span>
+                                </div>
+                            </div>
+                                                        <div class="slide-item">
+                                <div class="views-field views-field-field-teaser-img">
+                                    <div class="field-content">
+                                                                                    <a href="/news/v-dnr-zapushcheny-razoblachitelnye-internet-resursy" aria-label="Читать В ДНР запущены разоблачительные интернет-ресурсы"><img class="img-responsive"  src="/uploads/old/news-teasers/2015/12/furazka.jpg"  alt="furazka.jpg" /></a>
+                                                                                <a href='/news' aria-label="Страница новостей"><div class="view-footer">Все новости</div></a>
+                                                                            </div>
+                                </div>
+                                <div class="views-field views-field-title">
+                                    <span class="field-title mt-2">
+                                        <a href="/news/v-dnr-zapushcheny-razoblachitelnye-internet-resursy" aria-label="Читать В ДНР запущены разоблачительные интернет-ресурсы">В ДНР запущены разоблачительные интернет-ресурсы</a>
+                                    </span>
+                                </div>
+                            </div>
+                                                    </div>
+                        <section  class="col-12 col-md-5">
+                                                            <div class="views-field views-field-title views-field-title__underscore">
+                                    <span class="field-title">
+                                        <a href="/news/vnimanie-rozysk-229" aria-label="Читать Внимание, розыск!">Внимание, розыск!</a></span>
+                                </div>
+                                                            <div class="views-field views-field-title views-field-title__underscore">
+                                    <span class="field-title">
+                                        <a href="/news/vnimanie-rozysk-228" aria-label="Читать Внимание, розыск!">Внимание, розыск!</a></span>
+                                </div>
+                                                            <div class="views-field views-field-title views-field-title__underscore">
+                                    <span class="field-title">
+                                        <a href="/news/sk-gvardeets-oderzhal-ocherednuiu-pobedu-v-premer-lige-dnr" aria-label="Читать СК «Гвардеец» одержал очередную победу в Премьер-Лиге ДНР">СК «Гвардеец» одержал очередную победу в Премьер-Лиге ДНР</a></span>
+                                </div>
+                                                            <div class="views-field views-field-title views-field-title__underscore">
+                                    <span class="field-title">
+                                        <a href="/news/teleprogramma-mvd-dnr-102-ot-29-05-2021-g" aria-label="Читать Телепрограмма МВД ДНР &quot;102&quot; от 29 05.2021 г.">Телепрограмма МВД ДНР &quot;102&quot; от 29 05.2021 г.</a></span>
+                                </div>
+                                                            <div class="views-field views-field-title views-field-title__underscore">
+                                    <span class="field-title">
+                                        <a href="/news/vsya-pravda-o-smerti-nachalnika-debalcevskoy-milicii" aria-label="Читать Вся правда о смерти начальника Дебальцевской милиции">Вся правда о смерти начальника Дебальцевской милиции</a></span>
+                                </div>
+                                                            <div class="views-field views-field-title views-field-title__underscore">
+                                    <span class="field-title">
+                                        <a href="/news/v-dnr-zapushcheny-razoblachitelnye-internet-resursy" aria-label="Читать В ДНР запущены разоблачительные интернет-ресурсы">В ДНР запущены разоблачительные интернет-ресурсы</a></span>
+                                </div>
+                                                    </section>
+                    </div>
+                <hr class="container my-4">
+            </section>
 
-  <script>
-  window.console = window.console || function(t) {};
-</script>
+            <section class="container">
 
-  
-  
-  <script>
-  if (document.location.search.match(/type=embed/gi)) {
-    window.parent.postMessage("resize", "*");
-  }
-</script>
+                <h2 class="block-title">Новости</h2>
+                <div class="card-deck mt-3">
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/strazhi-poriadka-zaderzhali-donchanina-za-ugrozu-ubiistvom">
+                                <img src="/uploads/a52d40edcf0c614270108f4ce3347618.jpeg" class="card-img-top " alt="нож баба.jpg">
+                                                            </a>
 
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/strazhi-poriadka-zaderzhali-donchanina-za-ugrozu-ubiistvom">Стражи порядка задержали дончанина за угрозу убийством</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 14:12</small></p>
 
-</head>
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/zhitel-g-kirovskoe-privlechen-k-otvetstvennosti-za-zlostnoe-nepovinovenie-zakonnomu-trebovaniiu-sotrudnika-politsii">
+                                <img src="/uploads/f84cf3879ab912a19b126193e41cdd92.jpeg" class="card-img-top " alt="Полиция Ночной город лето 01 (3).JPG">
+                                                            </a>
 
-<body translate="no" >
-  <figure class="snip1336">
-  <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/331810/sample87.jpg" alt="sample87" />
-  <figcaption>
-    <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/331810/profile-sample4.jpg" alt="profile-sample4" class="profile" />
-    <h2>Hans Down<span>Engineer</span></h2>
-    <p>I'm looking for something that can deliver a 50-pound payload of snow on a small feminine target. Can you suggest something? Hello...? </p>
-    <a href="#" class="follow">Follow</a>
-    <a href="#" class="info">More Info</a>
-  </figcaption>
-</figure>
-<figure class="snip1336 hover"><img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/331810/sample74.jpg" alt="sample74" />
-  <figcaption>
-    <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/331810/profile-sample2.jpg" alt="profile-sample2" class="profile" />
-    <h2>Wisteria Widget<span>Photographer</span></h2>
-    <p>Calvin: I'm a genius, but I'm a misunderstood genius. Hobbes: What's misunderstood about you? Calvin: Nobody thinks I'm a genius.</p>
-    <a href="#" class="follow">Follow</a>
-    <a href="#" class="info">More Info</a>
-  </figcaption>
-</figure>
-<figure class="snip1336"><img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/331810/sample69.jpg" alt="sample69" />
-  <figcaption>
-    <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/331810/profile-sample5.jpg" alt="profile-sample5" class="profile" />
-    <h2>Desmond Eagle<span>Accountant</span></h2>
-    <p>If you want to stay dad you've got to polish your image. I think the image we need to create for you is "repentant but learning".</p>
-    <a href="#" class="follow">Follow</a>
-    <a href="#" class="info">More Info</a>
-  </figcaption>
-</figure>
-    <script src="https://cpwebassets.codepen.io/assets/common/stopExecutionOnTimeout-157cd5b220a5c80d4ff8e0e70ac069bffd87a61252088146915e8726e5d9f147.js"></script>
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/zhitel-g-kirovskoe-privlechen-k-otvetstvennosti-za-zlostnoe-nepovinovenie-zakonnomu-trebovaniiu-sotrudnika-politsii">Житель г. Кировское привлечен к ответственности за злостное неповиновение законному требованию сотрудника полиции</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 14:04</small></p>
 
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-      <script id="rendered-js" >
-/* Demo purposes only */
-$(".hover").mouseleave(
-function () {
-  $(this).removeClass("hover");
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/sotrudniki-enakievskogo-go-gsvo-presekli-draku-na-azs">
+                                <img src="/uploads/7ed125cab18e75e94942b0fcddffac63.jpeg" class="card-img-top " alt="Полиция ГСВО лето.jpg">
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/sotrudniki-enakievskogo-go-gsvo-presekli-draku-na-azs">Сотрудники Енакиевского ГО ГСВО пресекли драку на АЗС</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 14:03</small></p>
+
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/strazhi-poriadka-zaderzhali-zhitelia-donetska-za-krazhu">
+                                <img src="/uploads/43a2c305463d8833de17179de8c0984a.jpeg" class="card-img-top " alt="ДЧ дежурка Калининский РО Донецк 2020 03.jpg">
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/strazhi-poriadka-zaderzhali-zhitelia-donetska-za-krazhu">Стражи порядка задержали жителя Донецка за кражу</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 14:01</small></p>
+
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/pravookhraniteli-vyiavili-fakt-khraneniia-konopli-v-g-kirovskoe">
+                                <img src="/uploads/c8e27befe718dbb199aad40f138ef32b.jpeg" class="card-img-top " alt="стелла города  Кировское главная лето 2019  002.jpg">
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/pravookhraniteli-vyiavili-fakt-khraneniia-konopli-v-g-kirovskoe">Правоохранители выявили факт хранения конопли в г. Кировское</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 13:58</small></p>
+
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/v-khartsyzske-politseiskie-nagradili-shkolnitsu-za-aktivnuiu-grazhdanskuiu-pozitsiiu">
+                                <img src="/uploads/47cb8b06d8900bbe696a724f54e826f8.jpeg" class="card-img-top " alt="31.05.21 Харцызский ГО грамота школьнице.jpg">
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/v-khartsyzske-politseiskie-nagradili-shkolnitsu-za-aktivnuiu-grazhdanskuiu-pozitsiiu">В Харцызске полицейские наградили школьницу за активную гражданскую позицию</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 13:56</small></p>
+
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/proisshestviia-na-dorogakh-respubliki-17">
+                                <img src="/uploads/de59835eeee726897bcd4805b339eeb0.jpeg" class="card-img-top " alt="31.05.21 Сводка УГАИ.jpg">
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/proisshestviia-na-dorogakh-respubliki-17">Происшествия на дорогах Республики</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 13:55</small></p>
+
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/svodka-proisshestvii-za-28-30-maia-2021-goda">
+                                <img src="/uploads/old/news-teasers/2019/06/00_svodka_2017.jpg" class="card-img-top " alt="Сводка МВД.jpg">
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/svodka-proisshestvii-za-28-30-maia-2021-goda">Сводка происшествий за 28-30 мая 2021 года</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>31 мая 2021 г., 13:51</small></p>
+
+                            </div>
+                        </div>
+                                            <div class="card col-md-4 col-12 col-sm-12">
+                            <a href="/news/sotrudniki-politsii-obespechili-okhranu-poriadka-vo-vremia-poslednego-zvonka">
+                                <img src="/uploads/9b87de0d963d59fca3c1673a8b6d7744.jpeg" class="card-img-top " alt="последний звонок 1.jpg">
+                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                            </a>
+
+                            <div class="card-body">
+                                <h5 class="card-title"><a href="/news/sotrudniki-politsii-obespechili-okhranu-poriadka-vo-vremia-poslednego-zvonka">Сотрудники полиции обеспечили охрану порядка во время «Последнего звонка»</a></h5>
+                                <p class="card-text"><small class="text-muted"><i class="far fa-clock mr-2"></i>28 мая 2021 г., 20:55</small></p>
+
+                            </div>
+                        </div>
+                                    </div>
+                <a href="/news" aria-label="Страница новостей" class="float-right ml-auto my-3">Все новости</a>
+            </section>
+<section class="container-fluid my-3 py-5" style="background: #f1f1f1">
+            <article class="container">
+                <a class="text-decoration-none	" property="dc:title" content="О Министерстве" href="/about-ministry"><h2>О Министерстве</h2></a>
+                <div class="field field-name-body field-type-text-with-summary field-label-hidden">
+                    <div class="field-items">
+                        <div class="field-item even" property="content:encoded">
+                            <p>Министерство внутренних дел (далее по тексту - МВД) является органом исполнительной власти, осуществляющим функции по формированию и реализации государственной политики и нормативно-правовому регулированию в сфере внутренних дел, а также по выработке государственной политики в сфере миграции, вопросах исполнения уголовных наказаний.</p>
+                            <p>Глава МВД ДНР – Министр внутренних дел генерал-полковник полиции Дикий Алексей Александрович.</p>
+                        </div>
+                    </div>
+                </div>
+                        <a href="/about-ministry" class="btn-style" rel="tag" title="О Министерстве">Подробнее</a>
+            </article>
+    <div class="container p-md-0 mt-3">
+        <div class="row">
+            <div class="col-sm-12 col-md-6">
+                <a href="http://tribunal-dnr.ru/" target="_blank" rel="noopener nofollow"><img alt="oblozhka_mid1.jpg" src="/public/image/oblozhka_mid1.jpg" style="width:100%;max-width: 500px"/></a>
+            </div>
+            <div class="col-sm-12 col-md-6">
+                <a href="/teleprogramma?slug=tv-102"><img alt="banner_102_730_h_300_gotov.png" src="/public/image/banner_102_730_h_300_gotov.png" style="width:100%;max-width: 500px"/></a>
+            </div>
+        </div>
+    </div>
+</section>
+    <section class="container">
+        <h2 class="block-title">Фото и видео</h2>
+        <div class="row">
+            <div class="col-md-7 mx-sm-auto mb-3 col-sm-12">
+                <div class="js-slider-for">
+                                        <div class="slide-item">
+                        <div class="views-field views-field-field-teaser-img">
+                            <div class="views-field views-field-title">
+                            <span class="field-content mt-2 pt-3">
+                                <a href="/gallery/strazhi-poriadka-po-goriachim-sledam-zaderzhali-zhitelia-zhdanovki-za-sovershenie-tiazhkogo-prestupleniia">Стражи порядка по «горячим следам» задержали жителя Ждановки за совершение тяжкого преступления</a>
+                            </span>
+                            </div>
+                            <div class="field-content">
+                                <a href="/gallery/strazhi-poriadka-po-goriachim-sledam-zaderzhali-zhitelia-zhdanovki-za-sovershenie-tiazhkogo-prestupleniia"><img class="rounded mx-auto"
+                                                 src="/uploads/407f88d82d90247c451a59e779e7c450.jpeg" alt="28.05.21 Кировский ГО тяжкие телесные повреждения + 2 фото 2.jpg"/></a>
+                                <a href='/news' aria-label="Страница новостей">
+                                    <div class="view-footer">Все новости</div>
+                                </a>
+                                                            </div>
+                        </div>
+
+                    </div>
+                                        <div class="slide-item">
+                        <div class="views-field views-field-field-teaser-img">
+                            <div class="views-field views-field-title">
+                            <span class="field-content mt-2 pt-3">
+                                <a href="/gallery/strazhi-poriadka-obespechili-bezopasnost-grazhdan-vo-vremia-prazdnovaniia-dnia-respubliki">Стражи порядка обеспечили безопасность граждан во время празднования Дня Республики</a>
+                            </span>
+                            </div>
+                            <div class="field-content">
+                                <a href="/gallery/strazhi-poriadka-obespechili-bezopasnost-grazhdan-vo-vremia-prazdnovaniia-dnia-respubliki"><img class="rounded mx-auto"
+                                                 src="/uploads/e62666b1ae200ffe1108d95fc5dbf14b.jpeg" alt="00082.MTS.00_00_08_15.Still001.jpg"/></a>
+                                <a href='/news' aria-label="Страница новостей">
+                                    <div class="view-footer">Все новости</div>
+                                </a>
+                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                            </div>
+                        </div>
+
+                    </div>
+                                        <div class="slide-item">
+                        <div class="views-field views-field-field-teaser-img">
+                            <div class="views-field views-field-title">
+                            <span class="field-content mt-2 pt-3">
+                                <a href="/gallery/pozdravlenie-ministra-vnutrennikh-del-s-dnem-pobedy-i-dnem-respubliki">Поздравление Министра внутренних дел с Днем Победы и Днем Республики</a>
+                            </span>
+                            </div>
+                            <div class="field-content">
+                                <a href="/gallery/pozdravlenie-ministra-vnutrennikh-del-s-dnem-pobedy-i-dnem-respubliki"><img class="rounded mx-auto"
+                                                 src="/uploads/e0fc42420d6caf374595bdeba181cd4e.jpeg" alt="Поздравление Министра внутренних дел с 9 и 11 МАЯ.jpg"/></a>
+                                <a href='/news' aria-label="Страница новостей">
+                                    <div class="view-footer">Все новости</div>
+                                </a>
+                                                            </div>
+                        </div>
+
+                    </div>
+                                        <div class="slide-item">
+                        <div class="views-field views-field-field-teaser-img">
+                            <div class="views-field views-field-title">
+                            <span class="field-content mt-2 pt-3">
+                                <a href="/gallery/9-maia-na-territorii-donetskoi-narodnoi-respubliki-proshli-torzhestvennye-meropriiatiia-posviashchennye-prazdnovaniiu-76-i-godov">9 мая на территории Донецкой Народной Республики прошли торжественные мероприятия, посвященные празднованию 76-й годовщины Великой Победы, в которых приняли участие десятки тысяч жителей и гостей государства.</a>
+                            </span>
+                            </div>
+                            <div class="field-content">
+                                <a href="/gallery/9-maia-na-territorii-donetskoi-narodnoi-respubliki-proshli-torzhestvennye-meropriiatiia-posviashchennye-prazdnovaniiu-76-i-godov"><img class="rounded mx-auto"
+                                                 src="/uploads/8d1ca017bb586b13db65ba7c332a4ec2.jpeg" alt="IMG_0685.JPG"/></a>
+                                <a href='/news' aria-label="Страница новостей">
+                                    <div class="view-footer">Все новости</div>
+                                </a>
+                                                            </div>
+                        </div>
+
+                    </div>
+                                        <div class="slide-item">
+                        <div class="views-field views-field-field-teaser-img">
+                            <div class="views-field views-field-title">
+                            <span class="field-content mt-2 pt-3">
+                                <a href="/gallery/pravookhraniteli-obespechili-bezopasnost-grazhdan-vo-vremia-torzhestv-na-saur-mogile">Правоохранители обеспечили безопасность граждан во время торжеств на Саур-Могиле</a>
+                            </span>
+                            </div>
+                            <div class="field-content">
+                                <a href="/gallery/pravookhraniteli-obespechili-bezopasnost-grazhdan-vo-vremia-torzhestv-na-saur-mogile"><img class="rounded mx-auto"
+                                                 src="/uploads/b3252b66e309374fd5d8e536026de433.jpeg" alt="IMG_8444.JPG"/></a>
+                                <a href='/news' aria-label="Страница новостей">
+                                    <div class="view-footer">Все новости</div>
+                                </a>
+                                                                    <i class="play-icon fas fa-play-circle"></i>
+                                                            </div>
+                        </div>
+
+                    </div>
+                    
+                </div>
+                <div class="js-slider-nav mt-3">
+                                            <div class="mx-2">
+                            <img class="slider-nav__image" src="/uploads/407f88d82d90247c451a59e779e7c450.jpeg"  height="100px" alt="28.05.21 Кировский ГО тяжкие телесные повреждения + 2 фото 2.jpg" />
+                        </div>
+                                            <div class="mx-2">
+                            <img class="slider-nav__image" src="/uploads/e62666b1ae200ffe1108d95fc5dbf14b.jpeg"  height="100px" alt="00082.MTS.00_00_08_15.Still001.jpg" />
+                        </div>
+                                            <div class="mx-2">
+                            <img class="slider-nav__image" src="/uploads/e0fc42420d6caf374595bdeba181cd4e.jpeg"  height="100px" alt="Поздравление Министра внутренних дел с 9 и 11 МАЯ.jpg" />
+                        </div>
+                                            <div class="mx-2">
+                            <img class="slider-nav__image" src="/uploads/8d1ca017bb586b13db65ba7c332a4ec2.jpeg"  height="100px" alt="IMG_0685.JPG" />
+                        </div>
+                                            <div class="mx-2">
+                            <img class="slider-nav__image" src="/uploads/b3252b66e309374fd5d8e536026de433.jpeg"  height="100px" alt="IMG_8444.JPG" />
+                        </div>
+                                    </div>
+            </div>
+            <div class="col-md-5 mx-sm-auto mt-md-4 col-sm-12">
+                <div class="card-deck">
+                                        <div class="mini-card m-1">
+                        <a class="position-relative" href="/videos/sotrudniki-politsii-obespechili-okhranu-poriadka-vo-vremia-poslednego-zvonka">
+                            <img src="/uploads/9b87de0d963d59fca3c1673a8b6d7744.jpeg" class="card-img-top " alt="последний звонок 1.jpg">
+                                                            <i class="play-icon__mini fas fa-play-circle"></i>
+                                                    </a>
+
+                        <div class="mini-card-body">
+                            <span class="text-muted d-block my-1"><i class="far fa-clock mr-2"></i>28 мая 2021 г., 20:55</span>
+                            <a href="/videos/sotrudniki-politsii-obespechili-okhranu-poriadka-vo-vremia-poslednego-zvonka"><h5 class="card-title">Сотрудники полиции обеспечили охрану порядка во время «Последнего звонка»</h5></a>
+                        </div>
+                    </div>
+                                        <div class="mini-card m-1">
+                        <a class="position-relative" href="/videos/v-davd-mvd-dnr-sostoialsia-kruglyi-stol">
+                            <img src="/uploads/7967f4004d400c73e14226573f08c46f.jpeg" class="card-img-top " alt="ДАВД 2018 2.00_00_08_20.Still001.jpg">
+                                                            <i class="play-icon__mini fas fa-play-circle"></i>
+                                                    </a>
+
+                        <div class="mini-card-body">
+                            <span class="text-muted d-block my-1"><i class="far fa-clock mr-2"></i>27 мая 2021 г., 19:14</span>
+                            <a href="/videos/v-davd-mvd-dnr-sostoialsia-kruglyi-stol"><h5 class="card-title">В ДАВД МВД ДНР состоялся круглый стол</h5></a>
+                        </div>
+                    </div>
+                                        <div class="mini-card m-1">
+                        <a class="position-relative" href="/videos/zhitelnitsa-makeevki-privlechena-k-otvetstvennosti-za-moshennichestvo">
+                            <img src="/uploads/16730dc60a14ba8539e75e16bf84a400.jpeg" class="card-img-top " alt="Мошенница памятники Гвардейка.00_00_52_12.Still002.jpg">
+                                                            <i class="play-icon__mini fas fa-play-circle"></i>
+                                                    </a>
+
+                        <div class="mini-card-body">
+                            <span class="text-muted d-block my-1"><i class="far fa-clock mr-2"></i>26 мая 2021 г., 17:40</span>
+                            <a href="/videos/zhitelnitsa-makeevki-privlechena-k-otvetstvennosti-za-moshennichestvo"><h5 class="card-title">Жительница Макеевки привлечена к ответственности за мошенничество</h5></a>
+                        </div>
+                    </div>
+                                        <div class="mini-card m-1">
+                        <a class="position-relative" href="/videos/pravookhraniteli-napominaiut-ob-otvetstvennosti-za-otsutstvie-strakhovogo-polisa">
+                            <img src="/uploads/c42e9cd165e6cc11d68895f66720bc4d.jpeg" class="card-img-top " alt="25.05.21 ГАИ страхование.00_02_25_22.Still001.jpg">
+                                                            <i class="play-icon__mini fas fa-play-circle"></i>
+                                                    </a>
+
+                        <div class="mini-card-body">
+                            <span class="text-muted d-block my-1"><i class="far fa-clock mr-2"></i>25 мая 2021 г., 16:46</span>
+                            <a href="/videos/pravookhraniteli-napominaiut-ob-otvetstvennosti-za-otsutstvie-strakhovogo-polisa"><h5 class="card-title">Правоохранители напоминают об ответственности за отсутствие страхового полиса</h5></a>
+                        </div>
+                    </div>
+                                    </div>
+
+            </div>
+        </div>
+    </section>
+
+</div>
+    <footer class="mt-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 col-md-4 col-sm-12 mx-auto mx-md-0">
+                <h2 class="block-title">Разделы сайта</h2>
+                <ul>
+                    <li><a class="doted-underline" href="/about-ministry">О министерстве</a></li>
+                    <li ><a class="doted-underline" href="/activities">Деятельность</a></li>
+                    <li ><a class="doted-underline" href="/contacts">Контакты</a></li>
+                </ul>
+            </div>
+            <div class="col-12 col-md-4 col-sm-12">
+                <h2 class="block-title">Навигация</h2>
+                <ul>
+                    <li ><a class="doted-underline" href="/sitemap">Карта сайта</a></li>
+                    <li ><a class="doted-underline" href="/search">Поиск</a></li>
+                    <li><a class="doted-underline" href="/open-data">Открытые данные</a></li>
+                </ul>
+            </div>
+            <div class="col-12 col-md-4 col-sm-12">
+                <h2 class="block-title">Информация о сайте</h2>
+
+                <ul>
+                    <li><a class="doted-underline" href="/about-site">О сайте</a></li>
+                    <li><a class="doted-underline" href="/using-info">Об использовании информации</a></li>
+                    <li><a class="doted-underline" href="/report-an-error">Сообщить об ошибке</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <div class="row  footer__bottom">
+        <div class="col-md-3 col-12 mx col-sm-12">
+            <img alt="shevron_big_nov_orel_0.png" src="/public/image/shevron_big_nov_orel_0.png" style="height:170px; width:170px"/>
+            <img alt="line.png" src="/public/image/line.png" style="height:170px"/>
+        </div>
+            <div class="col-md-3 col-sm-12 col-12">
+                <h2 class="block-title">Канцелярия</h2>
+
+                <p>Адрес: г. Донецк, ул. Горького, 61.
+                    <br/> Телефон: 301-81-16
+                    <br/> 5-21-16 ("Феникс")
+                    <br/> Электронный адрес: <a href="mailto:udo.mvddnr@mail.ru">udo.mvddnr@mail.ru</a></p>
+            </div>
+            <div class="col-md-3 col-sm-12 col-12">
+                <h2 class="block-title">Пресс-служба</h2>
+
+                <p>Адрес: г. Донецк, ул. Горького, 61.
+                    <br/> Телефон: 301-80-20
+                    <br/> 5-20-20 ("Феникс")
+                    <br/> Электронный адрес: <a href="mailto:mvddnr2014@mail.ru">mvddnr2014@mail.ru</a></p>
+
+            </div>
+            <div class="col-md-3 col-sm-12 col-12">
+                <h2 class="block-title">Общественная приемная</h2>
+                <p>Общественная приемная
+                    <br/> Адрес: г. Донецк, ул. Горького, 61.
+                    <br/> Телефон: 301-85-38</p>
+            </div>
+        </div>
+        <div class="mx-auto text-center">
+            <a href="https://vk.com/public83540361" target="_blank" rel="noopener nofollow"><img alt="vk.png" src="/public/image/vk.png"
+                                                                                        style="height:46px; width:46px"/></a>
+            <a href="http://ok.ru/group53350688358642" target="_blank" rel="noopener nofollow"><img alt="ok.png" src="/public/image/ok.png"
+                                                                                           style="height:46px; width:46px"/></a>
+            <a href="https://www.youtube.com/channel/UCuTE7TOkskAwWiCnoBAnNZg" target="_blank" rel="noopener nofollow"><img alt="yo.png"
+                                                                                                                   src="/public/image/yo.png"
+                                                                                                                   style="height:46px; width:46px"/></a>
+        </div>
+        <p class="mx-auto text-center py-3">© 2021 Министерство Внутренних Дел ДНР</p>
+    </div>
+</footer>    <script src="/build/runtime.js"></script><script src="/build/vendors-node_modules_jquery_dist_jquery_js.js"></script><script src="/build/vendors-node_modules_fancyapps_fancybox_dist_jquery_fancybox_js-node_modules_bootstrap_dist_j-331d09.js"></script><script src="/build/app.js"></script>
+    <script src="//unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
+    <script>
+$('.js-one-time').slick({
+    dots: false,
+    infinite: true,
+    arrows:false,
+    speed: 300,
+    fade: true,
+    cssEase: 'linear',
+    slidesToShow: 1,
+    autoplay: true,
+    autoplaySpeed: 4000,
+    adaptiveHeight: true,
+    lazyLoad: 'progressive'
 });
-//# sourceURL=pen.js
+
+
+$('.js-slider-for').slick({
+    infinite:true,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    arrows: false,
+    fade: true,
+    cssEase: 'linear',
+    autoplay:true,
+    autoplaySpeed: 3000,
+    asNavFor: '.js-slider-nav',
+    adaptiveHeight: true
+
+});
+$('.js-slider-nav').slick({
+    infinite:true,
+    arrows: false,
+    slidesToShow: 3,
+    slidesToScroll: 1,
+    asNavFor: '.js-slider-for',
+    dots: false,
+    centerMode: true,
+    variableWidth: true,
+    focusOnSelect:true
+
+});
+</script>
+    <script>
+        $('.fake-search').click(function () {
+            $('.icon-search').toggleClass('fa-search fa-times');
+        });
+        window.onscroll = function() {scrollFunction()};
+
+        function scrollFunction() {
+            if (document.body.scrollTop > 150 || document.documentElement.scrollTop > 150) {
+                document.getElementById("header").classList.add('fixed');
+                document.getElementById("admin-panel")?.classList.add('fixed-top');
+            } else {
+                document.getElementById("header").classList.remove('fixed');
+                document.getElementById("admin-panel")?.classList.remove('fixed-top');
+            }
+        }
     </script>
 
-  
-
-</body>
-
+    </body>
 </html>
- 
+
+
