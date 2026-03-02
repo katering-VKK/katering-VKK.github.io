@@ -57,6 +57,9 @@ export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [isLocaleOpen, setLocaleOpen] = useState(false);
+  const [lang, setLang] = useState<'UA' | 'EN'>('UA');
+  const [currency, setCurrency] = useState<'UAH' | 'USD' | 'EUR'>('UAH');
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -165,11 +168,58 @@ export const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            <button className={`hidden lg:flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:opacity-70 transition-opacity ${isScrolled ? 'text-black' : 'text-white'}`}>
-              <span>UA</span>
-              <span className="opacity-30">|</span>
-              <span>UAH</span>
-            </button>
+            <div className="hidden lg:block relative">
+              <button
+                onClick={() => setLocaleOpen(!isLocaleOpen)}
+                className={`flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:opacity-70 transition-opacity ${isScrolled ? 'text-black' : 'text-white'}`}
+              >
+                <span>{lang}</span>
+                <span className="opacity-30">|</span>
+                <span>{currency}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${isLocaleOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {isLocaleOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-3 bg-white text-black shadow-xl rounded-xl p-4 min-w-[200px] border border-gray-100 z-50"
+                    onMouseLeave={() => setLocaleOpen(false)}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Мова</p>
+                    <div className="flex gap-2 mb-4">
+                      {(['UA', 'EN'] as const).map(l => (
+                        <button
+                          key={l}
+                          onClick={() => setLang(l)}
+                          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                            lang === l ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {l === 'UA' ? '🇺🇦 UA' : '🇬🇧 EN'}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Валюта</p>
+                    <div className="flex gap-2">
+                      {(['UAH', 'USD', 'EUR'] as const).map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setCurrency(c)}
+                          className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                            currency === c ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {c === 'UAH' ? '₴' : c === 'USD' ? '$' : '€'} {c}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             
             <div className="flex items-center gap-4">
               <button
