@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowUpRight } from 'lucide-react';
+import { useStore } from '../store';
 
 const categories = [
   {
@@ -36,6 +37,8 @@ const categories = [
 ];
 
 export const CategorySplit = () => {
+  const { navigateToCategory } = useStore();
+
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-6 lg:px-12">
@@ -47,6 +50,7 @@ export const CategorySplit = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.08 }}
               viewport={{ once: true }}
+              onClick={() => navigateToCategory(cat.title)}
               className={`relative group overflow-hidden rounded-3xl cursor-pointer ${
                 idx < 2 ? 'col-span-1 md:col-span-1 lg:col-span-1' : ''
               }`}

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, ShoppingBag, Menu, X, ChevronDown, Globe, Rocket, ChevronRight, Star } from 'lucide-react';
+import { Search, Heart, ShoppingBag, Menu, X, ChevronDown, Rocket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useStore } from '../store';
 
 export const Navbar = () => {
+  const { cartCount, setCartOpen, navigateToCategory } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -19,7 +19,7 @@ export const Navbar = () => {
   const navLinks = [
     { 
       name: 'Книги', 
-      href: '#',
+      category: 'Книги',
       subcategories: [
         'Підготовка до школи',
         'Розмальовки',
@@ -29,7 +29,7 @@ export const Navbar = () => {
     },
     { 
       name: 'Іграшки', 
-      href: '#',
+      category: 'Іграшки',
       subcategories: [
         'Іграшки 0+',
         'Для дівчаток',
@@ -41,12 +41,18 @@ export const Navbar = () => {
         'Конструктори',
         'Пазли',
         'Мʼякі іграшки',
-        'Іграшки власного виробництва'
       ]
     },
-    { name: 'Власне виробництво', href: '#' },
-    { name: 'Акції', href: '#', className: 'text-red-600' },
+    { name: 'Власне виробництво', category: 'Власне виробництво' },
+    { name: 'Творчість', category: 'Творчість' },
+    { name: 'Настільні ігри', category: 'Настільні ігри' },
   ];
+
+  const handleNavClick = (category: string) => {
+    navigateToCategory(category);
+    setActiveDropdown(null);
+    setIsMobileMenuOpen(false);
+  };
 
   const toggleMobileCategory = (name: string) => {
     setMobileExpanded(mobileExpanded === name ? null : name);
@@ -63,8 +69,6 @@ export const Navbar = () => {
         onMouseLeave={() => setActiveDropdown(null)}
       >
         <div className="max-w-[1920px] mx-auto px-6 lg:px-12 flex items-center justify-between h-full relative">
-          
-          {/* Logo - Always visible but animates */}
           <a href="/" className="flex items-center gap-3 group z-50 relative">
              <div className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-all duration-500 ${isScrolled ? 'bg-black text-white' : 'bg-white/10 text-white backdrop-blur-md border border-white/20'}`}>
                <Rocket className="w-5 h-5 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform duration-500" />
@@ -79,27 +83,25 @@ export const Navbar = () => {
             </div>
           </a>
 
-          {/* Center Navigation (Desktop) */}
-          <div className="hidden lg:flex items-center gap-12 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="hidden lg:flex items-center gap-10 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             {navLinks.map((link) => (
               <div 
                 key={link.name} 
                 className="relative group h-full flex items-center"
                 onMouseEnter={() => setActiveDropdown(link.name)}
               >
-                <a
-                  href={link.href}
+                <button
+                  onClick={() => handleNavClick(link.category)}
                   className={`relative py-2 text-sm font-bold tracking-widest uppercase transition-colors duration-300 ${
                     activeDropdown === link.name 
                       ? 'text-yellow-500' 
                       : isScrolled ? 'text-gray-800 hover:text-black' : 'text-white/90 hover:text-white'
-                  } ${link.className || ''}`}
+                  }`}
                 >
                   {link.name}
                   <span className={`absolute -bottom-1 left-0 w-full h-[2px] bg-yellow-500 transform scale-x-0 transition-transform duration-300 origin-center ${activeDropdown === link.name ? 'scale-x-100' : 'group-hover:scale-x-100'}`}></span>
-                </a>
+                </button>
                 
-                {/* Simple Dropdown */}
                 <AnimatePresence>
                   {link.subcategories && activeDropdown === link.name && (
                     <motion.div
@@ -112,14 +114,21 @@ export const Navbar = () => {
                       onMouseLeave={() => setActiveDropdown(null)}
                     >
                       <div className="bg-white text-black shadow-lg rounded-lg py-2 border border-gray-100">
+                        <button
+                          onClick={() => handleNavClick(link.category)}
+                          className="block w-full text-left px-4 py-2 text-sm font-bold text-black hover:bg-gray-50 transition-colors"
+                        >
+                          Дивитися все
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
                         {link.subcategories.map((sub) => (
-                          <a 
-                            key={sub} 
-                            href="#" 
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                          <button
+                            key={sub}
+                            onClick={() => handleNavClick(link.category)}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
                           >
                             {sub}
-                          </a>
+                          </button>
                         ))}
                       </div>
                     </motion.div>
@@ -129,7 +138,6 @@ export const Navbar = () => {
             ))}
           </div>
 
-          {/* Right Actions */}
           <div className="flex items-center gap-6">
             <button className={`hidden lg:flex items-center gap-2 text-xs font-bold tracking-widest uppercase hover:opacity-70 transition-opacity ${isScrolled ? 'text-black' : 'text-white'}`}>
               <span>UA</span>
@@ -144,9 +152,21 @@ export const Navbar = () => {
               <button className={`p-2 rounded-full hover:bg-white/10 transition-colors hidden sm:block ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}>
                 <Heart className="w-5 h-5" />
               </button>
-              <button className={`p-2 rounded-full hover:bg-white/10 transition-colors relative ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}>
+              <button
+                onClick={() => setCartOpen(true)}
+                className={`p-2 rounded-full hover:bg-white/10 transition-colors relative ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}
+              >
                 <ShoppingBag className="w-5 h-5" />
-                <span className="absolute top-0 right-0 w-4 h-4 bg-yellow-500 text-black text-[10px] font-bold flex items-center justify-center rounded-full">0</span>
+                {cartCount > 0 && (
+                  <motion.span
+                    key={cartCount}
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-yellow-500 text-black text-[10px] font-bold flex items-center justify-center rounded-full"
+                  >
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </motion.span>
+                )}
               </button>
               <button 
                 className={`lg:hidden p-2 rounded-full hover:bg-white/10 transition-colors ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}
@@ -159,7 +179,7 @@ export const Navbar = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -169,7 +189,6 @@ export const Navbar = () => {
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-[60] flex flex-col bg-[#0f172a] text-white overflow-hidden"
           >
-            {/* Background Elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
               <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-black/50 to-transparent"></div>
@@ -192,16 +211,25 @@ export const Navbar = () => {
               {navLinks.map((link) => (
                 <div key={link.name} className="flex flex-col border-b border-white/5 last:border-0">
                   <div 
-                    className={`flex items-center justify-between py-4 cursor-pointer group ${link.className || ''}`}
-                    onClick={() => link.subcategories ? toggleMobileCategory(link.name) : setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between py-4 cursor-pointer group"
+                    onClick={() => {
+                      if (link.subcategories) {
+                        toggleMobileCategory(link.name);
+                      } else {
+                        handleNavClick(link.category);
+                      }
+                    }}
                   >
-                    <a 
-                      href={link.href} 
+                    <button 
+                      onClick={(e) => {
+                        if (!link.subcategories) return;
+                        e.stopPropagation();
+                        handleNavClick(link.category);
+                      }}
                       className={`text-xl font-medium transition-colors ${mobileExpanded === link.name ? 'text-yellow-300' : 'group-hover:text-yellow-300'}`}
-                      onClick={(e) => { if(link.subcategories) e.preventDefault(); }}
                     >
                       {link.name}
-                    </a>
+                    </button>
                     {link.subcategories && (
                       <div className={`p-1 rounded-full transition-all ${mobileExpanded === link.name ? 'bg-yellow-300 text-black rotate-180' : 'bg-white/10'}`}>
                         <ChevronDown className="w-5 h-5" />
@@ -209,7 +237,6 @@ export const Navbar = () => {
                     )}
                   </div>
                   
-                  {/* Mobile Subcategories */}
                   <AnimatePresence>
                     {link.subcategories && mobileExpanded === link.name && (
                       <motion.div
@@ -219,15 +246,22 @@ export const Navbar = () => {
                         className="overflow-hidden"
                       >
                         <div className="pl-4 pb-4 flex flex-col gap-3">
+                          <button
+                            onClick={() => handleNavClick(link.category)}
+                            className="py-2 text-yellow-300 font-bold flex items-center gap-2 text-base"
+                          >
+                            <span className="w-1 h-1 bg-yellow-300 rounded-full"></span>
+                            Дивитися все
+                          </button>
                           {link.subcategories.map((sub) => (
-                            <a 
-                              key={sub} 
-                              href="#" 
-                              className="py-2 text-gray-300 hover:text-white flex items-center gap-2 text-base"
+                            <button 
+                              key={sub}
+                              onClick={() => handleNavClick(link.category)}
+                              className="py-2 text-gray-300 hover:text-white flex items-center gap-2 text-base text-left"
                             >
                               <span className="w-1 h-1 bg-yellow-300 rounded-full"></span>
                               {sub}
-                            </a>
+                            </button>
                           ))}
                         </div>
                       </motion.div>
@@ -237,12 +271,15 @@ export const Navbar = () => {
               ))}
               
               <div className="mt-8 flex flex-col gap-4">
-                <button className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-yellow-300 transition-colors">
-                  Увійти
+                <button
+                  onClick={() => { setCartOpen(true); setIsMobileMenuOpen(false); }}
+                  className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-yellow-300 transition-colors flex items-center justify-center gap-3"
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  Кошик {cartCount > 0 && `(${cartCount})`}
                 </button>
                 <div className="flex justify-between items-center text-sm text-gray-400 px-2">
                   <span>UA / UAH (₴)</span>
-                  <span>Бажане (0)</span>
                 </div>
               </div>
             </div>

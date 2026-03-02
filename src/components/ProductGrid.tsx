@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allProducts, categories, getProductGradient } from '../data/products';
+import { useStore } from '../store';
 
 const ITEMS_PER_PAGE = 12;
 
 export const ProductGrid = () => {
-  const [activeCategory, setActiveCategory] = useState('Всі');
+  const { activeCategory, setActiveCategory, addToCart, cart } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
+  const [addedId, setAddedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory]);
 
   const filteredProducts = allProducts.filter(product => {
     if (activeCategory === 'Всі') return true;
@@ -21,13 +27,20 @@ export const ProductGrid = () => {
 
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
-    setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const handleAddToCart = (product: typeof allProducts[0]) => {
+    addToCart(product);
+    setAddedId(product.id);
+    setTimeout(() => setAddedId(null), 1200);
+  };
+
+  const isInCart = (id: number) => cart.some(i => i.product.id === id);
 
   const maxVisiblePages = 7;
   const getVisiblePages = () => {
@@ -101,18 +114,32 @@ export const ProductGrid = () => {
                 </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                 
-                <button className="absolute bottom-3 right-3 bg-white p-3 rounded-full opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-lg hover:bg-black hover:text-white z-20">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <path d="M16 10a4 4 0 0 1-8 0"></path>
-                  </svg>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
+                  className={`absolute bottom-3 right-3 p-3 rounded-full opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-lg z-20 ${
+                    addedId === product.id
+                      ? 'bg-emerald-500 text-white'
+                      : isInCart(product.id)
+                      ? 'bg-black text-white hover:bg-gray-800'
+                      : 'bg-white text-black hover:bg-black hover:text-white'
+                  }`}
+                >
+                  {addedId === product.id ? (
+                    <Check className="w-[18px] h-[18px]" />
+                  ) : (
+                    <ShoppingBag className="w-[18px] h-[18px]" />
+                  )}
                 </button>
               </div>
               <div className="px-1">
                 <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">{product.category}</p>
                 <h3 className="text-sm font-bold mb-1 group-hover:text-purple-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
-                <p className="text-sm font-semibold text-gray-900">{product.price}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-900">{product.price}</p>
+                  {isInCart(product.id) && (
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">В кошику</span>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}

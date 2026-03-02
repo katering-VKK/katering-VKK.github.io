@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Star, Clock } from 'lucide-react';
+import { useStore } from '../store';
 
 export const Hero = () => {
+  const { navigateToCategory } = useStore();
+
   return (
     <div className="relative h-screen w-full overflow-hidden">
-      {/* Gradient Background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(120,80,200,0.3)_0%,_transparent_60%)]" />
@@ -13,7 +15,6 @@ export const Hero = () => {
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
-      {/* Floating Space Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <motion.div 
           animate={{ y: [0, -20, 0], rotate: [0, 10, 0] }}
@@ -34,22 +35,17 @@ export const Hero = () => {
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/3 right-10 w-4 h-4 bg-white rounded-full blur-sm"
         />
-        {/* Extra decorative dots */}
         {[...Array(6)].map((_, i) => (
           <motion.div
             key={i}
             animate={{ opacity: [0.2, 0.8, 0.2] }}
             transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
             className="absolute w-1.5 h-1.5 bg-white/40 rounded-full"
-            style={{
-              top: `${15 + (i * 13) % 70}%`,
-              left: `${10 + (i * 17) % 80}%`,
-            }}
+            style={{ top: `${15 + (i * 13) % 70}%`, left: `${10 + (i * 17) % 80}%` }}
           />
         ))}
       </div>
 
-      {/* Content */}
       <div className="relative h-full flex flex-col items-center justify-center text-center px-4 pt-24 z-10">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -58,7 +54,6 @@ export const Hero = () => {
           className="mb-16 flex flex-col items-center relative"
         >
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-white/10 blur-[100px] rounded-full pointer-events-none"></div>
-          
           <img 
             src="/logo.png" 
             alt="Маленький Всесвіт" 
@@ -72,11 +67,17 @@ export const Hero = () => {
           transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
           className="flex flex-col sm:flex-row gap-6 mb-16"
         >
-          <button className="group relative overflow-hidden bg-white text-black px-12 py-4 rounded-full font-bold text-sm transition-all hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] min-w-[180px] uppercase tracking-widest">
+          <button
+            onClick={() => navigateToCategory('Книги')}
+            className="group relative overflow-hidden bg-white text-black px-12 py-4 rounded-full font-bold text-sm transition-all hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] min-w-[180px] uppercase tracking-widest"
+          >
             <span className="relative z-10 group-hover:text-purple-900 transition-colors">Книги</span>
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 to-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
-          <button className="group relative overflow-hidden bg-transparent border-2 border-white text-white px-12 py-4 rounded-full font-bold text-sm transition-all hover:bg-white/10 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] min-w-[180px] uppercase tracking-widest backdrop-blur-sm">
+          <button
+            onClick={() => navigateToCategory('Іграшки')}
+            className="group relative overflow-hidden bg-transparent border-2 border-white text-white px-12 py-4 rounded-full font-bold text-sm transition-all hover:bg-white/10 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] min-w-[180px] uppercase tracking-widest backdrop-blur-sm"
+          >
             <span className="relative z-10">Іграшки</span>
           </button>
         </motion.div>
