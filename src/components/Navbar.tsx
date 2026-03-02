@@ -3,8 +3,56 @@ import { Search, Heart, ShoppingBag, Menu, X, ChevronDown, Rocket } from 'lucide
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 
+interface SubcategoryDef {
+  label: string;
+  category: string;
+  tag: string | null;
+}
+
+interface NavLinkDef {
+  name: string;
+  category: string;
+  subcategories?: SubcategoryDef[];
+}
+
+const navLinks: NavLinkDef[] = [
+  { 
+    name: 'Книги', 
+    category: 'Книги',
+    subcategories: [
+      { label: 'Підготовка до школи', category: 'Книги', tag: 'Підготовка до школи' },
+      { label: 'Розмальовки', category: 'Книги', tag: 'Розмальовки' },
+      { label: 'Наліпки', category: 'Книги', tag: 'Наліпки' },
+      { label: 'Класика', category: 'Книги', tag: 'Класика' },
+      { label: 'Пізнавальні', category: 'Книги', tag: 'Пізнавальні' },
+      { label: 'Для малечі', category: 'Книги', tag: 'Для малечі' },
+      { label: 'Бестселери', category: 'Книги', tag: 'Бестселер' },
+    ]
+  },
+  { 
+    name: 'Іграшки', 
+    category: 'Іграшки',
+    subcategories: [
+      { label: 'Іграшки 0+', category: 'Іграшки', tag: '0+' },
+      { label: 'Для дівчаток', category: 'Іграшки', tag: 'Для дівчаток' },
+      { label: 'Для хлопчиків', category: 'Іграшки', tag: 'Для хлопчиків' },
+      { label: 'Інтерактивні іграшки', category: 'Іграшки', tag: 'Інтерактивні' },
+      { label: 'Розвиваючі іграшки', category: 'Іграшки', tag: 'Розвиваючі' },
+      { label: 'Конструктори', category: 'Іграшки', tag: 'Конструктори' },
+      { label: 'Пазли', category: 'Іграшки', tag: 'Пазли' },
+      { label: 'Мʼякі іграшки', category: 'Іграшки', tag: 'Мʼякі іграшки' },
+      { label: 'Рольові ігри', category: 'Іграшки', tag: 'Рольові ігри' },
+      { label: 'Музичні', category: 'Іграшки', tag: 'Музичні' },
+      { label: 'Наука', category: 'Іграшки', tag: 'Наука' },
+    ]
+  },
+  { name: 'Власне виробництво', category: 'Власне виробництво' },
+  { name: 'Творчість', category: 'Творчість' },
+  { name: 'Настільні ігри', category: 'Настільні ігри' },
+];
+
 export const Navbar = () => {
-  const { cartCount, setCartOpen, navigateToCategory } = useStore();
+  const { cartCount, setCartOpen, navigateToCategory, navigateToSubcategory } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -16,40 +64,18 @@ export const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { 
-      name: 'Книги', 
-      category: 'Книги',
-      subcategories: [
-        'Підготовка до школи',
-        'Розмальовки',
-        'Наліпки',
-        'Книги в наявності'
-      ]
-    },
-    { 
-      name: 'Іграшки', 
-      category: 'Іграшки',
-      subcategories: [
-        'Іграшки 0+',
-        'Для дівчаток',
-        'Для хлопчиків',
-        'Інтерактивні іграшки',
-        'Настільні ігри та творчість',
-        'Розвиваючі іграшки',
-        'Деревʼяні іграшки',
-        'Конструктори',
-        'Пазли',
-        'Мʼякі іграшки',
-      ]
-    },
-    { name: 'Власне виробництво', category: 'Власне виробництво' },
-    { name: 'Творчість', category: 'Творчість' },
-    { name: 'Настільні ігри', category: 'Настільні ігри' },
-  ];
-
   const handleNavClick = (category: string) => {
     navigateToCategory(category);
+    setActiveDropdown(null);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleSubClick = (sub: SubcategoryDef) => {
+    if (sub.tag) {
+      navigateToSubcategory(sub.category, sub.tag);
+    } else {
+      navigateToCategory(sub.category);
+    }
     setActiveDropdown(null);
     setIsMobileMenuOpen(false);
   };
@@ -109,25 +135,25 @@ export const Navbar = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 pt-2 min-w-[200px]"
+                      className="absolute top-full left-0 pt-2 min-w-[220px]"
                       onMouseEnter={() => setActiveDropdown(link.name)}
                       onMouseLeave={() => setActiveDropdown(null)}
                     >
                       <div className="bg-white text-black shadow-lg rounded-lg py-2 border border-gray-100">
                         <button
                           onClick={() => handleNavClick(link.category)}
-                          className="block w-full text-left px-4 py-2 text-sm font-bold text-black hover:bg-gray-50 transition-colors"
+                          className="block w-full text-left px-4 py-2.5 text-sm font-bold text-black hover:bg-gray-50 transition-colors"
                         >
                           Дивитися все
                         </button>
                         <div className="h-px bg-gray-100 my-1" />
                         {link.subcategories.map((sub) => (
                           <button
-                            key={sub}
-                            onClick={() => handleNavClick(link.category)}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                            key={sub.label}
+                            onClick={() => handleSubClick(sub)}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
                           >
-                            {sub}
+                            {sub.label}
                           </button>
                         ))}
                       </div>
@@ -255,12 +281,12 @@ export const Navbar = () => {
                           </button>
                           {link.subcategories.map((sub) => (
                             <button 
-                              key={sub}
-                              onClick={() => handleNavClick(link.category)}
+                              key={sub.label}
+                              onClick={() => handleSubClick(sub)}
                               className="py-2 text-gray-300 hover:text-white flex items-center gap-2 text-base text-left"
                             >
                               <span className="w-1 h-1 bg-yellow-300 rounded-full"></span>
-                              {sub}
+                              {sub.label}
                             </button>
                           ))}
                         </div>
@@ -278,9 +304,6 @@ export const Navbar = () => {
                   <ShoppingBag className="w-5 h-5" />
                   Кошик {cartCount > 0 && `(${cartCount})`}
                 </button>
-                <div className="flex justify-between items-center text-sm text-gray-400 px-2">
-                  <span>UA / UAH (₴)</span>
-                </div>
               </div>
             </div>
           </motion.div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allProducts, categories, getProductGradient } from '../data/products';
 import { useStore } from '../store';
@@ -7,18 +7,19 @@ import { useStore } from '../store';
 const ITEMS_PER_PAGE = 12;
 
 export const ProductGrid = () => {
-  const { activeCategory, setActiveCategory, addToCart, cart } = useStore();
+  const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory]);
+  }, [activeCategory, activeTag]);
 
   const filteredProducts = allProducts.filter(product => {
-    if (activeCategory === 'Всі') return true;
     if (activeCategory === 'Хіт продажу') return product.tag === 'Хіт продажу';
-    return product.category === activeCategory;
+    const catMatch = activeCategory === 'Всі' || product.category === activeCategory;
+    const tagMatch = !activeTag || product.tag === activeTag;
+    return catMatch && tagMatch;
   });
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -78,6 +79,20 @@ export const ProductGrid = () => {
           ))}
         </div>
       </div>
+
+      {/* Active tag indicator */}
+      {activeTag && (
+        <div className="mb-8 flex items-center gap-3">
+          <span className="text-sm text-gray-500">Фільтр:</span>
+          <button
+            onClick={() => setActiveTag(null)}
+            className="inline-flex items-center gap-2 bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-medium hover:bg-purple-200 transition-colors"
+          >
+            {activeTag}
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       <motion.div 
         layout
@@ -150,6 +165,14 @@ export const ProductGrid = () => {
         <div className="text-center py-20 text-gray-500">
           <Filter className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>Товарів у цій категорії поки немає.</p>
+          {activeTag && (
+            <button
+              onClick={() => setActiveTag(null)}
+              className="mt-4 text-sm text-purple-600 underline hover:text-purple-800"
+            >
+              Скинути фільтр "{activeTag}"
+            </button>
+          )}
         </div>
       )}
 

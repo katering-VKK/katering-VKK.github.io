@@ -19,8 +19,11 @@ interface StoreContextType {
 
   activeCategory: string;
   setActiveCategory: (cat: string) => void;
+  activeTag: string | null;
+  setActiveTag: (tag: string | null) => void;
   scrollToGrid: () => void;
   navigateToCategory: (cat: string) => void;
+  navigateToSubcategory: (cat: string, tag: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -36,7 +39,13 @@ function formatPrice(n: number): string {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('Всі');
+  const [activeCategory, setActiveCategoryRaw] = useState('Всі');
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const setActiveCategory = useCallback((cat: string) => {
+    setActiveCategoryRaw(cat);
+    setActiveTag(null);
+  }, []);
 
   const addToCart = useCallback((product: Product) => {
     setCart(prev => {
@@ -73,6 +82,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setTimeout(() => {
       document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
     }, 50);
+  }, [setActiveCategory]);
+
+  const navigateToSubcategory = useCallback((cat: string, tag: string) => {
+    setActiveCategoryRaw(cat);
+    setActiveTag(tag);
+    setTimeout(() => {
+      document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
   }, []);
 
   return (
@@ -81,7 +98,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addToCart, removeFromCart, updateQty, clearCart,
       isCartOpen, setCartOpen,
       activeCategory, setActiveCategory,
-      scrollToGrid, navigateToCategory,
+      activeTag, setActiveTag,
+      scrollToGrid, navigateToCategory, navigateToSubcategory,
     }}>
       {children}
     </StoreContext.Provider>
