@@ -52,7 +52,7 @@ const navLinks: NavLinkDef[] = [
 ];
 
 export const Navbar = () => {
-  const { cartCount, setCartOpen, navigateToCategory, navigateToSubcategory } = useStore();
+  const { cartCount, setCartOpen, favCount, setFavOpen, setSearchOpen, navigateToCategory, navigateToSubcategory } = useStore();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -172,11 +172,27 @@ export const Navbar = () => {
             </button>
             
             <div className="flex items-center gap-4">
-              <button className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}>
+              <button
+                onClick={() => setSearchOpen(true)}
+                className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}
+              >
                 <Search className="w-5 h-5" />
               </button>
-              <button className={`p-2 rounded-full hover:bg-white/10 transition-colors hidden sm:block ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}>
+              <button
+                onClick={() => setFavOpen(true)}
+                className={`p-2 rounded-full hover:bg-white/10 transition-colors relative hidden sm:block ${isScrolled ? 'text-black hover:bg-black/5' : 'text-white'}`}
+              >
                 <Heart className="w-5 h-5" />
+                {favCount > 0 && (
+                  <motion.span
+                    key={favCount}
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full"
+                  >
+                    {favCount > 99 ? '99+' : favCount}
+                  </motion.span>
+                )}
               </button>
               <button
                 onClick={() => setCartOpen(true)}
@@ -296,7 +312,21 @@ export const Navbar = () => {
                 </div>
               ))}
               
-              <div className="mt-8 flex flex-col gap-4">
+              <div className="mt-8 flex flex-col gap-3">
+                <button
+                  onClick={() => { setSearchOpen(true); setIsMobileMenuOpen(false); }}
+                  className="w-full bg-white/10 text-white py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-white/20 transition-colors flex items-center justify-center gap-3 border border-white/10"
+                >
+                  <Search className="w-5 h-5" />
+                  Пошук
+                </button>
+                <button
+                  onClick={() => { setFavOpen(true); setIsMobileMenuOpen(false); }}
+                  className="w-full bg-white/10 text-white py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-white/20 transition-colors flex items-center justify-center gap-3 border border-white/10"
+                >
+                  <Heart className="w-5 h-5" />
+                  Обране {favCount > 0 && `(${favCount})`}
+                </button>
                 <button
                   onClick={() => { setCartOpen(true); setIsMobileMenuOpen(false); }}
                   className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-yellow-300 transition-colors flex items-center justify-center gap-3"

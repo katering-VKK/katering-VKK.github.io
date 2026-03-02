@@ -17,6 +17,16 @@ interface StoreContextType {
   isCartOpen: boolean;
   setCartOpen: (open: boolean) => void;
 
+  favorites: number[];
+  favCount: number;
+  toggleFavorite: (id: number) => void;
+  isFavorite: (id: number) => boolean;
+  isFavOpen: boolean;
+  setFavOpen: (open: boolean) => void;
+
+  isSearchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
+
   activeCategory: string;
   setActiveCategory: (cat: string) => void;
   activeTag: string | null;
@@ -39,6 +49,9 @@ function formatPrice(n: number): string {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setCartOpen] = useState(false);
+  const [favorites, setFavorites] = useState<number[]>([]);
+  const [isFavOpen, setFavOpen] = useState(false);
+  const [isSearchOpen, setSearchOpen] = useState(false);
   const [activeCategory, setActiveCategoryRaw] = useState('Всі');
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
@@ -70,8 +83,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setCart([]), []);
 
+  const toggleFavorite = useCallback((id: number) => {
+    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  }, []);
+
+  const isFavorite = useCallback((id: number) => favorites.includes(id), [favorites]);
+
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = formatPrice(cart.reduce((s, i) => s + parsePrice(i.product.price) * i.qty, 0));
+  const favCount = favorites.length;
 
   const scrollToGrid = useCallback(() => {
     document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
@@ -97,6 +117,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cart, cartCount, cartTotal,
       addToCart, removeFromCart, updateQty, clearCart,
       isCartOpen, setCartOpen,
+      favorites, favCount, toggleFavorite, isFavorite,
+      isFavOpen, setFavOpen,
+      isSearchOpen, setSearchOpen,
       activeCategory, setActiveCategory,
       activeTag, setActiveTag,
       scrollToGrid, navigateToCategory, navigateToSubcategory,

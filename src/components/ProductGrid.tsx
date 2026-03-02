@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { allProducts, categories, getProductGradient } from '../data/products';
 import { useStore } from '../store';
@@ -7,7 +7,7 @@ import { useStore } from '../store';
 const ITEMS_PER_PAGE = 12;
 
 export const ProductGrid = () => {
-  const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart } = useStore();
+  const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
 
@@ -129,6 +129,17 @@ export const ProductGrid = () => {
                 </div>
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
                 
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }}
+                  className={`absolute top-3 right-3 p-2.5 rounded-full transition-all duration-300 shadow-lg z-20 ${
+                    isFavorite(product.id)
+                      ? 'bg-red-500 text-white opacity-100'
+                      : 'bg-white/90 backdrop-blur-sm text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-white' : ''}`} />
+                </button>
+
                 <button
                   onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
                   className={`absolute bottom-3 right-3 p-3 rounded-full opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-lg z-20 ${
