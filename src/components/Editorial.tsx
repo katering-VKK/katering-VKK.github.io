@@ -7,21 +7,21 @@ const articles = [
     title: 'Анімована книга: Подорож до зірок',
     category: 'Новинки',
     description: 'Пориньте у світ SS26 з нашою анімованою книгою. Історія про маленького астронавта.',
-    image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=1000&auto=format&fit=crop',
+    gradient: 'linear-gradient(135deg, hsl(340, 75%, 60%) 0%, hsl(20, 85%, 65%) 100%)',
   },
   {
     id: 2,
     title: 'Колекція "Місячне Сяйво"',
     category: 'Натхнення',
     description: 'Колекція, що запрошує вас сповільнитися та відчути глибину космосу.',
-    image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop',
+    gradient: 'linear-gradient(135deg, hsl(230, 70%, 55%) 0%, hsl(270, 65%, 70%) 100%)',
   },
   {
     id: 3,
     title: 'Космічні пригоди',
     category: 'Для дітей',
     description: 'Колекція, що святкує допитливість, щоденні відкриття та мистецтво гри.',
-    image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?q=80&w=1000&auto=format&fit=crop',
+    gradient: 'linear-gradient(135deg, hsl(160, 65%, 50%) 0%, hsl(190, 70%, 60%) 100%)',
   }
 ];
 
@@ -49,10 +49,9 @@ export const Editorial = () => {
               className="flex flex-col group cursor-pointer"
             >
               <div className="aspect-[3/4] overflow-hidden rounded-2xl mb-6 relative">
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                <div
+                  className="w-full h-full transition-transform duration-700 group-hover:scale-105"
+                  style={{ background: article.gradient }}
                 />
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                   {article.category}

@@ -6,20 +6,32 @@ const categories = [
   {
     title: 'Книги',
     description: 'Історії, що надихають',
-    image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1598&auto=format&fit=crop',
-    alt: 'Дитячі книги'
+    gradient: 'linear-gradient(135deg, hsl(10, 80%, 65%) 0%, hsl(35, 90%, 70%) 100%)',
+    count: 55,
   },
   {
     title: 'Іграшки',
     description: 'Для розвитку та гри',
-    image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=1740&auto=format&fit=crop',
-    alt: 'Дитячі іграшки'
+    gradient: 'linear-gradient(135deg, hsl(210, 80%, 60%) 0%, hsl(240, 70%, 70%) 100%)',
+    count: 55,
   },
   {
     title: 'Власне виробництво',
     description: 'Зроблено з любовʼю',
-    image: 'https://images.unsplash.com/photo-1599623560574-39d485900c95?q=80&w=1740&auto=format&fit=crop',
-    alt: 'Іграшки власного виробництва'
+    gradient: 'linear-gradient(135deg, hsl(40, 70%, 65%) 0%, hsl(50, 60%, 75%) 100%)',
+    count: 35,
+  },
+  {
+    title: 'Творчість',
+    description: 'Розкрий свій талант',
+    gradient: 'linear-gradient(135deg, hsl(290, 70%, 65%) 0%, hsl(320, 75%, 70%) 100%)',
+    count: 30,
+  },
+  {
+    title: 'Настільні ігри',
+    description: 'Грайте разом',
+    gradient: 'linear-gradient(135deg, hsl(120, 60%, 55%) 0%, hsl(150, 65%, 65%) 100%)',
+    count: 25,
   }
 ];
 
@@ -27,35 +39,39 @@ export const CategorySplit = () => {
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-6 lg:px-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 auto-rows-[280px] md:auto-rows-[360px]">
           {categories.map((cat, idx) => (
             <motion.div 
               key={cat.title} 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.08 }}
               viewport={{ once: true }}
-              className="relative group overflow-hidden rounded-3xl cursor-pointer"
+              className={`relative group overflow-hidden rounded-3xl cursor-pointer ${
+                idx < 2 ? 'col-span-1 md:col-span-1 lg:col-span-1' : ''
+              }`}
             >
-              <img
-                src={cat.image}
-                alt={cat.alt}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              <div
+                className="absolute inset-0 transition-transform duration-700 group-hover:scale-110"
+                style={{ background: cat.gradient }}
               />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500" />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 transition-colors duration-500" />
               
-              <div className="absolute inset-0 p-8 flex flex-col justify-between">
-                <div className="flex justify-end">
-                  <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 -translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-                    <ArrowUpRight className="w-6 h-6" />
+              <div className="absolute inset-0 p-6 flex flex-col justify-between relative z-10">
+                <div className="flex justify-between items-start">
+                  <span className="text-white/60 text-xs font-bold uppercase tracking-widest">
+                    {cat.count} товарів
+                  </span>
+                  <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 -translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                    <ArrowUpRight className="w-5 h-5" />
                   </div>
                 </div>
                 
                 <div>
-                  <p className="text-white/80 text-sm uppercase tracking-widest mb-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
+                  <p className="text-white/80 text-xs uppercase tracking-widest mb-1.5 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
                     {cat.description}
                   </p>
-                  <h3 className="text-white text-4xl font-display font-bold uppercase tracking-tight">
+                  <h3 className="text-white text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight">
                     {cat.title}
                   </h3>
                 </div>

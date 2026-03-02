@@ -5,14 +5,12 @@ import { Star, Clock } from 'lucide-react';
 export const Hero = () => {
   return (
     <div className="relative h-screen w-full overflow-hidden">
-      {/* Background Image */}
+      {/* Gradient Background */}
       <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=3272&auto=format&fit=crop"
-          alt="Space themed background"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(120,80,200,0.3)_0%,_transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(60,130,200,0.2)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
       {/* Floating Space Elements */}
@@ -36,6 +34,19 @@ export const Hero = () => {
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/3 right-10 w-4 h-4 bg-white rounded-full blur-sm"
         />
+        {/* Extra decorative dots */}
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ opacity: [0.2, 0.8, 0.2] }}
+            transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+            className="absolute w-1.5 h-1.5 bg-white/40 rounded-full"
+            style={{
+              top: `${15 + (i * 13) % 70}%`,
+              left: `${10 + (i * 17) % 80}%`,
+            }}
+          />
+        ))}
       </div>
 
       {/* Content */}
@@ -46,7 +57,6 @@ export const Hero = () => {
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
           className="mb-16 flex flex-col items-center relative"
         >
-          {/* Glow effect behind logo */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-white/10 blur-[100px] rounded-full pointer-events-none"></div>
           
           <img 
