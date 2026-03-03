@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua'];
-  if (origin.includes('vercel.app')) allowed.push(origin);
+  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'http://localhost:3000'];
+  if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
   res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://lumu.com.ua');
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

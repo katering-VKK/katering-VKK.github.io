@@ -4,6 +4,18 @@
 
 ---
 
+## GitHub Secret: VITE_TELEGRAM_API_URL (для деплою на GitHub Pages)
+
+Щоб адмінка та замовлення працювали на GitHub Pages, додайте секрет:
+
+1. **GitHub** → репозиторій → **Settings** → **Secrets and variables** → **Actions**
+2. **New repository secret**
+3. Name: `VITE_TELEGRAM_API_URL`
+4. Value: `https://lumu-pearl.vercel.app/api` (без слеша в кінці)
+5. Збережіть. Після наступного push деплой підхопить змінну.
+
+---
+
 ## Пароль для входу (ADMIN_TOKEN)
 
 **Пароль зберігається в Vercel, не в GitHub.**
