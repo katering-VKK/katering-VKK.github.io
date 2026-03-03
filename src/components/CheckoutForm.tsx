@@ -72,7 +72,7 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
     }
     setLoading(true);
     const phone = formatPhoneForSubmit(form.phone);
-    const items = cart.map(({ product, qty }) => `• ${escapeHtml(product.name)} × ${qty} — ${product.price}`);
+    const items = cart.map(({ product, qty }) => `• ${escapeHtml(product.name)} (${product.category}) × ${qty} — ${product.price}`);
     const lines = [
       '🛒 <b>Нове замовлення</b>',
       '',
