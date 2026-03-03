@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
+import { useStore } from '../store';
 import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
 import { categories } from '../data/products';
@@ -14,6 +15,7 @@ const API_URL = import.meta.env.VITE_TELEGRAM_API_URL
 
 export const Admin = () => {
   const { products, loading, refetch } = useProducts();
+  const { showToast } = useStore();
   const [auth, setAuth] = useState<{ token: string } | null>(() => {
     try {
       const s = sessionStorage.getItem(ADMIN_KEY);
@@ -129,6 +131,7 @@ export const Admin = () => {
       }
       if (data.ok) {
         await refetch();
+        showToast('Збережено в GitHub');
       } else {
         setSaveError(data.error || `Помилка ${res.status}`);
       }
@@ -358,7 +361,17 @@ function ProductEditModal({ product, onSave, onClose }: { product: Product; onSa
             <label className="block text-xs font-bold text-gray-500 mb-1">Фото</label>
             <div className="flex items-center gap-4">
               {form.image ? (
-                <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" />
+                <div className="relative group">
+                  <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" />
+                  <button
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, image: undefined }))}
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Видалити фото"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               ) : (
                 <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Немає</div>
               )}

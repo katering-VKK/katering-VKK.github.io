@@ -69,7 +69,7 @@ export const FavoritesDrawer = () => {
                     >
                       <div className="w-20 h-20 rounded-xl shrink-0 overflow-hidden">
                         {product.image ? (
-                          <img src={product.image} alt="" className="w-full h-full object-cover" />
+                          <img src={product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
                             <span className="text-white/40 text-2xl font-black select-none">{product.name.charAt(0)}</span>

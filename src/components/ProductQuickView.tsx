@@ -65,7 +65,7 @@ export const ProductQuickView = () => {
           <div className="flex flex-col sm:flex-row">
             <div className="aspect-square sm:w-[45%] flex items-center justify-center shrink-0 overflow-hidden">
               {product.image ? (
-                <img src={product.image} alt="" className="w-full h-full object-cover" />
+                <img src={product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
                   <span className="text-white/30 text-8xl font-black select-none">{product.name.charAt(0)}</span>
@@ -147,7 +147,7 @@ export const ProductQuickView = () => {
                   >
                     <div className="w-full aspect-square rounded-xl overflow-hidden transition-transform group-hover:scale-105">
                       {p.image ? (
-                        <img src={p.image} alt="" className="w-full h-full object-cover" />
+                        <img src={p.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(p.id, p.category) }}>
                           <span className="text-white/30 text-2xl font-black">{p.name.charAt(0)}</span>

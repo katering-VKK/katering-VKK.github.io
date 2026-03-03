@@ -130,16 +130,21 @@ export const ProductGrid = () => {
         </div>
       )}
 
-      {loading && (
-        <div className="py-20 text-center text-gray-400">
-          <div className="inline-block w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
-          <p className="mt-4 text-sm">Завантаження каталогу...</p>
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10">
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-[3/4] mb-4 rounded-2xl bg-gray-100" />
+              <div className="h-3 bg-gray-100 rounded w-1/3 mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-full mb-2" />
+              <div className="h-4 bg-gray-100 rounded w-1/2" />
+            </div>
+          ))}
         </div>
-      )}
-
+      ) : (
       <motion.div 
         layout
-        className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10 ${loading ? 'opacity-0' : ''}`}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10"
       >
         <AnimatePresence mode="popLayout">
           {currentProducts.map((product) => (
@@ -165,7 +170,7 @@ export const ProductGrid = () => {
                 )}
                 <div className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center relative overflow-hidden">
                   {product.image ? (
-                    <img src={product.image} alt="" className="w-full h-full object-cover" />
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <>
                       <div className="absolute inset-0" style={{ background: getProductGradient(product.id, product.category) }} />
@@ -220,8 +225,9 @@ export const ProductGrid = () => {
           ))}
         </AnimatePresence>
       </motion.div>
+      )}
 
-      {currentProducts.length === 0 && (
+      {!loading && currentProducts.length === 0 && (
         <div className="text-center py-20 text-gray-500">
           <Filter className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>Товарів у цій категорії поки немає.</p>

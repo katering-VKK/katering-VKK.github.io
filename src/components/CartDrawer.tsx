@@ -117,7 +117,7 @@ export const CartDrawer = () => {
                       >
                         <div className="w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden">
                           {latest.image ? (
-                            <img src={latest.image} alt="" className="w-full h-full object-cover" />
+                            <img src={latest.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(latest.id, latest.category) }}>
                               <span className="text-white/40 text-2xl font-black select-none">{latest.name.charAt(0)}</span>
