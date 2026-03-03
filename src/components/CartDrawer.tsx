@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Minus, Plus, Trash2, ShoppingBag, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
-import { getProductGradient } from '../data/products';
+import { useProducts, getProductGradient, parsePrice } from '../context/ProductsContext';
 import { CheckoutForm } from './CheckoutForm';
 
 type Step = 'cart' | 'checkout' | 'thanks';
 
+function formatPrice(n: number) {
+  return n.toLocaleString('uk-UA') + ' ₴';
+}
+
 export const CartDrawer = () => {
-  const { cart, cartCount, cartTotal, isCartOpen, setCartOpen, removeFromCart, updateQty, clearCart } = useStore();
+  const { cart, cartCount, isCartOpen, setCartOpen, removeFromCart, updateQty, clearCart } = useStore();
+  const { products } = useProducts();
+  const cartTotal = useMemo(() => {
+    const total = cart.reduce((s, i) => {
+      const p = products.find(x => x.id === i.product.id) || i.product;
+      return s + parsePrice(p.price) * i.qty;
+    }, 0);
+    return formatPrice(total);
+  }, [cart, products]);
   const [step, setStep] = useState<Step>('cart');
 
   const handleClose = () => {
@@ -92,7 +104,9 @@ export const CartDrawer = () => {
 
                 <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
                   <AnimatePresence mode="popLayout">
-                    {cart.map(({ product, qty }) => (
+                    {cart.map(({ product, qty }) => {
+                      const latest = products.find(p => p.id === product.id) || product;
+                      return (
                       <motion.div
                         key={product.id}
                         layout
@@ -102,18 +116,18 @@ export const CartDrawer = () => {
                         className="flex gap-4 bg-gray-50 rounded-2xl p-3"
                       >
                         <div className="w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden">
-                          {product.image ? (
-                            <img src={product.image} alt="" className="w-full h-full object-cover" />
+                          {latest.image ? (
+                            <img src={latest.image} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
-                              <span className="text-white/40 text-2xl font-black select-none">{product.name.charAt(0)}</span>
+                            <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(latest.id, latest.category) }}>
+                              <span className="text-white/40 text-2xl font-black select-none">{latest.name.charAt(0)}</span>
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
-                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
-                            <h4 className="text-sm font-bold leading-tight truncate">{product.name}</h4>
+                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{latest.category}</p>
+                            <h4 className="text-sm font-bold leading-tight truncate">{latest.name}</h4>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -131,7 +145,7 @@ export const CartDrawer = () => {
                                 <Plus className="w-3 h-3" />
                               </button>
                             </div>
-                            <span className="text-sm font-bold">{product.price}</span>
+                            <span className="text-sm font-bold">{latest.price}</span>
                           </div>
                         </div>
                         <button
@@ -141,7 +155,7 @@ export const CartDrawer = () => {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </motion.div>
-                    ))}
+                    );})}
                   </AnimatePresence>
                 </div>
 

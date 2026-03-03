@@ -24,7 +24,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${PRODUCTS_URL}?t=${Date.now()}`);
+      const res = await fetch(`${PRODUCTS_URL}?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -42,6 +42,12 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchProducts().finally(() => setLoading(false));
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    const onFocus = () => fetchProducts();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, [fetchProducts]);
 
   return (

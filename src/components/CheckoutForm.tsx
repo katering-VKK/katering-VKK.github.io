@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Send, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '../store';
+import { useProducts, parsePrice } from '../context/ProductsContext';
 import { isValidEmail, isValidUAPhone, formatPhoneForSubmit } from '../utils/validation';
+
+function formatPrice(n: number) {
+  return n.toLocaleString('uk-UA') + ' ₴';
+}
 
 interface FormData {
   name: string;
@@ -40,7 +45,15 @@ async function sendToTelegram(text: string): Promise<{ ok: boolean; error?: stri
 }
 
 export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) => {
-  const { cart, cartTotal } = useStore();
+  const { cart } = useStore();
+  const { products } = useProducts();
+  const cartTotal = useMemo(() => {
+    const total = cart.reduce((s, i) => {
+      const p = products.find(x => x.id === i.product.id) || i.product;
+      return s + parsePrice(p.price) * i.qty;
+    }, 0);
+    return formatPrice(total);
+  }, [cart, products]);
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading] = useState(false);
@@ -75,10 +88,11 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
     setLoading(true);
     const phone = formatPhoneForSubmit(form.phone);
     const items = cart.map(({ product, qty }, i) => {
-      const priceNum = parseInt(product.price.replace(/\s/g, '').replace('₴', ''), 10) || 0;
+      const p = products.find(x => x.id === product.id) || product;
+      const priceNum = parsePrice(p.price);
       const subtotal = priceNum * qty;
-      const tagPart = product.tag ? ` / ${escapeHtml(product.tag)}` : '';
-      return `${i + 1}. ID:${product.id} | ${escapeHtml(product.name)} | ${product.category}${tagPart} | ${qty} шт. × ${product.price} = ${subtotal.toLocaleString('uk-UA')} ₴`;
+      const tagPart = p.tag ? ` / ${escapeHtml(p.tag)}` : '';
+      return `${i + 1}. ID:${p.id} | ${escapeHtml(p.name)} | ${p.category}${tagPart} | ${qty} шт. × ${p.price} = ${subtotal.toLocaleString('uk-UA')} ₴`;
     });
     const lines = [
       '🛒 <b>Нове замовлення</b>',
