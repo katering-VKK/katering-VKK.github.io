@@ -9,6 +9,8 @@ import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { FavoritesDrawer } from './components/FavoritesDrawer';
 import { SearchOverlay } from './components/SearchOverlay';
+import { ProductQuickView } from './components/ProductQuickView';
+import { Toast } from './components/Toast';
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
         <CartDrawer />
         <FavoritesDrawer />
         <SearchOverlay />
+        <ProductQuickView />
+        <Toast />
       </div>
     </StoreProvider>
   );

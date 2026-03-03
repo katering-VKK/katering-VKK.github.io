@@ -7,7 +7,7 @@ import { useStore } from '../store';
 const ITEMS_PER_PAGE = 12;
 
 export const ProductGrid = () => {
-  const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite } = useStore();
+  const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite, setQuickViewProduct } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
 
@@ -108,6 +108,7 @@ export const ProductGrid = () => {
               transition={{ duration: 0.3 }}
               key={product.id}
               className="group cursor-pointer"
+              onClick={() => setQuickViewProduct(product)}
             >
               <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl shadow-sm group-hover:shadow-xl transition-all duration-500">
                 {product.tag && (

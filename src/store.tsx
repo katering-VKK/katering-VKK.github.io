@@ -27,6 +27,11 @@ interface StoreContextType {
   isSearchOpen: boolean;
   setSearchOpen: (open: boolean) => void;
 
+  quickViewProduct: Product | null;
+  setQuickViewProduct: (p: Product | null) => void;
+  toast: { message: string; type?: 'success' | 'info' } | null;
+  showToast: (message: string, type?: 'success' | 'info') => void;
+
   activeCategory: string;
   setActiveCategory: (cat: string) => void;
   activeTag: string | null;
@@ -52,8 +57,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [isFavOpen, setFavOpen] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [toast, setToast] = useState<{ message: string; type?: 'success' | 'info' } | null>(null);
   const [activeCategory, setActiveCategoryRaw] = useState('Всі');
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 2500);
+  }, []);
 
   const setActiveCategory = useCallback((cat: string) => {
     setActiveCategoryRaw(cat);
@@ -67,7 +79,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return [...prev, { product, qty: 1 }];
     });
     setCartOpen(true);
-  }, []);
+    showToast('Додано в кошик');
+  }, [showToast]);
 
   const removeFromCart = useCallback((productId: number) => {
     setCart(prev => prev.filter(i => i.product.id !== productId));
@@ -120,6 +133,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       favorites, favCount, toggleFavorite, isFavorite,
       isFavOpen, setFavOpen,
       isSearchOpen, setSearchOpen,
+      quickViewProduct, setQuickViewProduct,
+      toast, showToast,
       activeCategory, setActiveCategory,
       activeTag, setActiveTag,
       scrollToGrid, navigateToCategory, navigateToSubcategory,
