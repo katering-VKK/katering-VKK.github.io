@@ -1,24 +1,25 @@
 # Vercel — налаштування API (усунення 404)
 
-Якщо `/api/*` повертає **404 NOT_FOUND**, перевірте:
+## Рішення: окремий API-проект (lumu-api)
 
-## 1. Root Directory
+Створено папку **lumu-api/** — окремий Vercel-проект тільки для API.
 
-**Vercel** → проект **lumu** → **Settings** → **General** → **Root Directory**
+### Кроки
 
-Має бути **порожньо** або `.` — щоб корінь репозиторію був коренем проєкту. Якщо вказано підпапку (наприклад `frontend`), папка `api/` не потрапить у деплой.
+1. **Vercel** → **Add New** → **Project**
+2. **Import** репозиторій **katering-VKK/katering-VKK.github.io**
+3. **Root Directory** → натисніть **Edit** → введіть `lumu-api` → **Continue**
+4. **Environment Variables** — додайте:
+   - `ADMIN_TOKEN` = lumu-admin-2024
+   - `GITHUB_TOKEN` = ваш токен
+   - `TELEGRAM_BOT_TOKEN` = токен бота
+   - `TELEGRAM_CHAT_ID` = 871897952
+5. **Deploy**
+6. Скопіюйте URL (наприклад `lumu-api-xxx.vercel.app`)
+7. **GitHub** → Settings → Secrets → `VITE_TELEGRAM_API_URL` = `https://ваш-url.vercel.app/api`
+8. (Опційно) **Vercel** → проект lumu-api → **Settings** → **Domains** → додайте `lumu-pearl.vercel.app`
 
-## 2. Підключення репозиторію
+### Перевірка
 
-**Settings** → **Git** → переконайтеся, що підключено **katering-VKK/katering-VKK.github.io** (або ваш репозиторій з папкою `api/`).
-
-## 3. Перевірка після деплою
-
-- https://lumu-pearl.vercel.app/api/hello — має повернути `{"ok":true,"msg":"API works"}`
-- https://lumu-pearl.vercel.app/api/admin/health — має повернути `{"configured":true}`
-
-Якщо `/api/hello` теж 404 — API взагалі не деплоїться (див. Root Directory).
-
-## 4. Redeploy
-
-Після змін у налаштуваннях: **Deployments** → … → **Redeploy**.
+- `https://ваш-url.vercel.app/api/hello` → `{"ok":true,"msg":"API works"}`
+- `https://ваш-url.vercel.app/api/admin/health` → `{"configured":true}`
