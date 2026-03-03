@@ -143,7 +143,7 @@ export const Admin = () => {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Пароль"
+              placeholder="Пароль (ADMIN_TOKEN з Vercel)"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-500"
               autoFocus
             />
@@ -157,6 +157,9 @@ export const Admin = () => {
               Увійти
             </button>
           </form>
+          <p className="mt-4 text-xs text-gray-400 text-center">
+            Пароль — це <code className="bg-gray-100 px-1 rounded">ADMIN_TOKEN</code> з Vercel → Settings → Environment Variables
+          </p>
           <Link to="/" className="block mt-6 text-center text-sm text-gray-500 hover:text-black">
             На головну
           </Link>

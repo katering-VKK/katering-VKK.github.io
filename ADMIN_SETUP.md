@@ -1,33 +1,61 @@
 # Налаштування адмін-панелі
 
-Адмін-панель доступна за адресою **https://lumu.com.ua/admin**
+Адмін-панель: **https://lumu.com.ua/admin**
 
-## Що потрібно
+---
 
-1. **ADMIN_TOKEN** — пароль для входу (придумайте складний, додайте в Vercel)
-2. **GITHUB_TOKEN** — вже додано (з gh auth). Якщо не працює — створіть новий токен з правами `repo`
+## Пароль для входу (ADMIN_TOKEN)
 
-## Як створити GitHub Token
+**Пароль зберігається в Vercel, не в GitHub.**
 
-1. GitHub → Settings → Developer settings → Personal access tokens
-2. Generate new token (classic)
-3. Виберіть scope **repo** (повний доступ до репозиторіїв)
-4. Скопіюйте токен (формат `ghp_...`)
+1. Відкрийте **https://vercel.com** → проект **lumu**
+2. **Settings** → **Environment Variables**
+3. Знайдіть `ADMIN_TOKEN` — це ваш пароль для входу
+4. Якщо немає — додайте: Name: `ADMIN_TOKEN`, Value: придумайте пароль (наприклад `lumu-secret-2025`)
+5. Redeploy проект після зміни
 
-## Додати змінні в Vercel
+---
 
-1. Vercel → проект lumu → Settings → Environment Variables
-2. Додайте або перевірте:
-   - `ADMIN_TOKEN` — ваш пароль для входу в адмінку (придумайте і збережіть!)
-   - `GITHUB_TOKEN` — Personal Access Token з правами `repo`
-   - `GITHUB_REPO` — (опційно) `katering-VKK/katering-VKK.github.io`
+## GitHub Token (GITHUB_TOKEN) — для збереження товарів
 
-3. Redeploy проект після додавання змінних
+Потрібен, щоб адмінка могла комітити зміни в репозиторій.
+
+### Де взяти:
+
+1. **GitHub** → профіль (аватар) → **Settings**
+2. Ліва колонка → **Developer settings**
+3. **Personal access tokens** → **Tokens (classic)**
+4. **Generate new token (classic)**
+5. Note: `lumu-admin`
+6. Expiration: 90 days або No expiration
+7. Виберіть scope **repo** (повний доступ)
+8. **Generate token**
+9. **Скопіюйте токен** (формат `ghp_xxxxxxxx`) — він показується один раз!
+
+### Додати в Vercel:
+
+1. Vercel → lumu → Settings → Environment Variables
+2. Додайте: Name: `GITHUB_TOKEN`, Value: вставте скопійований токен
+3. Redeploy
+
+**Пряме посилання:** https://github.com/settings/tokens/new?scopes=repo
+
+---
+
+## Підсумок змінних у Vercel
+
+| Змінна        | Де взяти                    | Призначення              |
+|---------------|-----------------------------|--------------------------|
+| ADMIN_TOKEN   | Придумайте самі             | Пароль для входу в адмінку |
+| GITHUB_TOKEN  | GitHub → Settings → Tokens  | Коміт змін у репозиторій |
+| GITHUB_REPO   | (опційно)                   | `katering-VKK/katering-VKK.github.io` |
+
+---
 
 ## Використання
 
 1. Відкрийте https://lumu.com.ua/admin
-2. Введіть пароль (за замовчуванням: `lumu-admin-2024` — змініть у Vercel для безпеки!)
-3. Редагуйте товари, додавайте нові, видаляйте
-4. Натисніть «Зберегти в GitHub» — зміни закомітяться в `public/products.json`
-5. Після деплою (1–2 хв) зміни з’являться на сайті
+2. Введіть пароль (ADMIN_TOKEN з Vercel)
+3. Редагуйте товари, додавайте, видаляйте
+4. Натисніть **«Зберегти в GitHub»**
+5. Через 1–2 хв зміни з’являться на сайті
