@@ -150,28 +150,29 @@ export const ProductGrid = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
               key={product.id}
-              className="group cursor-pointer hover:-translate-y-1 transition-transform duration-300"
+              className="group cursor-pointer"
               onClick={() => setQuickViewProduct(product)}
             >
-              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl shadow-card group-hover:shadow-card-hover transition-all duration-500">
+              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl border-2 border-gray-100 group-hover:border-violet-200 shadow-lg group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
                 {product.tag && (
-                  <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full ${
+                  <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full shadow-md ${
                     product.tag === 'Хіт продажу' ? 'bg-[var(--color-bobo-yellow)] text-black' :
                     product.tag === 'New' ? 'bg-emerald-400 text-black' :
-                    'bg-white/90 backdrop-blur-sm text-black'
+                    'bg-white/95 backdrop-blur-sm text-gray-800'
                   }`}>
                     {product.tag}
                   </span>
                 )}
                 <div
-                  className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center"
+                  className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center relative"
                   style={{ background: getProductGradient(product.id, product.category) }}
                 >
-                  <span className="text-white/30 text-6xl font-black select-none">
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.15)_100%)]" />
+                  <span className="text-white/40 text-7xl font-black select-none drop-shadow-lg relative z-10 group-hover:scale-110 transition-transform">
                     {product.name.charAt(0)}
                   </span>
                 </div>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }}
@@ -201,11 +202,11 @@ export const ProductGrid = () => {
                   )}
                 </button>
               </div>
-              <div className="px-1">
-                <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider mb-1">{product.category}</p>
-                <h3 className="text-sm font-bold mb-1 group-hover:text-purple-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
+              <div className="px-1 py-2">
+                <p className="text-[11px] font-medium text-violet-500 uppercase tracking-wider mb-1.5">{product.category}</p>
+                <h3 className="text-sm font-bold mb-2 group-hover:text-violet-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-900">{product.price}</p>
+                  <p className="text-base font-bold text-gray-900">{product.price}</p>
                   {isInCart(product.id) && (
                     <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">В кошику</span>
                   )}

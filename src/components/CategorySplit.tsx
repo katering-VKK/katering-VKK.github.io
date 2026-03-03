@@ -51,7 +51,7 @@ export const CategorySplit = () => {
               transition={{ delay: idx * 0.08 }}
               viewport={{ once: true }}
               onClick={() => navigateToCategory(cat.title)}
-              className={`relative group overflow-hidden rounded-3xl cursor-pointer shadow-card hover:shadow-card-hover transition-shadow duration-500 ${
+              className={`relative group overflow-hidden rounded-3xl cursor-pointer border-2 border-white/50 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 ${
                 idx < 2 ? 'col-span-1 md:col-span-1 lg:col-span-1' : ''
               }`}
             >
@@ -59,23 +59,25 @@ export const CategorySplit = () => {
                 className="absolute inset-0 transition-transform duration-700 group-hover:scale-110"
                 style={{ background: cat.gradient }}
               />
-              <div className="absolute inset-0 bg-black/5 group-hover:bg-black/20 transition-colors duration-500" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.2)_0%,transparent_50%)]" />
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 transition-colors duration-500" />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'repeating-linear-gradient(-45deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 16px)' }} />
               
               <div className="absolute inset-0 p-6 flex flex-col justify-between relative z-10">
                 <div className="flex justify-between items-start">
-                  <span className="text-white/60 text-xs font-bold uppercase tracking-widest">
+                  <span className="text-white/80 text-xs font-bold uppercase tracking-widest bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full">
                     {cat.count} товарів
                   </span>
-                  <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 -translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                  <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/30 opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                     <ArrowUpRight className="w-5 h-5" />
                   </div>
                 </div>
                 
                 <div>
-                  <p className="text-white/80 text-xs uppercase tracking-widest mb-1.5 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
+                  <p className="text-white/90 text-xs uppercase tracking-widest mb-1.5 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75">
                     {cat.description}
                   </p>
-                  <h3 className="text-white text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight">
+                  <h3 className="text-white text-2xl md:text-3xl font-display font-bold uppercase tracking-tight leading-tight drop-shadow-lg">
                     {cat.title}
                   </h3>
                 </div>

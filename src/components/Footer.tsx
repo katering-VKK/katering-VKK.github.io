@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Youtube, MapPin, Clock, Rocket, Phone, Mail, Heart, Send, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Facebook, Instagram, Youtube, MapPin, Clock, Rocket, Phone, Mail, Heart, Send, ArrowUpRight, Sparkles, Settings } from 'lucide-react';
 import { useStore } from '../store';
 
 export const Footer = () => {
@@ -217,6 +217,13 @@ export const Footer = () => {
                   </div>
                 ))}
               </div>
+              <Link
+                to="/admin"
+                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all border border-white/5"
+                aria-label="Адмін-панель"
+              >
+                <Settings className="w-4 h-4" />
+              </Link>
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all border border-white/5"

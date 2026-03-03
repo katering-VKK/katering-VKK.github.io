@@ -48,24 +48,25 @@ export const Editorial = () => {
               viewport={{ once: true }}
               className="flex flex-col group cursor-pointer"
             >
-              <div className="aspect-[3/4] overflow-hidden rounded-2xl mb-6 relative">
+              <div className="aspect-[3/4] overflow-hidden rounded-2xl mb-6 relative border-2 border-gray-100 group-hover:border-violet-200 shadow-lg group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-500">
                 <div
                   className="w-full h-full transition-transform duration-700 group-hover:scale-105"
                   style={{ background: article.gradient }}
                 />
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md">
                   {article.category}
                 </div>
               </div>
               <div className="flex flex-col gap-3">
-                <h3 className="text-2xl font-display font-bold leading-tight group-hover:text-purple-600 transition-colors">
+                <h3 className="text-2xl font-display font-bold leading-tight group-hover:text-violet-600 transition-colors">
                   {article.title}
                 </h3>
                 <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
                   {article.description}
                 </p>
-                <div className="mt-2 text-xs font-bold uppercase tracking-widest text-black flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                  Читати далі
+                <div className="mt-2 text-xs font-bold uppercase tracking-widest text-violet-600 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                  Читати далі →
                 </div>
               </div>
             </motion.div>

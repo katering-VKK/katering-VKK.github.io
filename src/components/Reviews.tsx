@@ -42,14 +42,14 @@ export const Reviews = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
               viewport={{ once: true }}
-              className="relative p-8 rounded-2xl bg-[var(--color-bobo-cream)] border border-gray-100"
+              className="relative p-8 rounded-2xl bg-gradient-to-br from-[var(--color-bobo-cream)] to-white border-2 border-gray-100 hover:border-violet-200 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-500"
             >
               <Quote className="absolute top-6 right-6 w-8 h-8 text-violet-200" />
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`w-5 h-5 ${i < review.rating ? 'fill-[var(--color-bobo-yellow)] text-[var(--color-bobo-yellow)]' : 'text-gray-200'}`}
+                    className={`w-5 h-5 drop-shadow-sm ${i < review.rating ? 'fill-[var(--color-bobo-yellow)] text-[var(--color-bobo-yellow)]' : 'text-gray-200'}`}
                   />
                 ))}
               </div>
