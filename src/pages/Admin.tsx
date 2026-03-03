@@ -103,22 +103,37 @@ export const Admin = () => {
     setSaveError('');
     setSaving(true);
     try {
+      const payload = localProducts.map(p => ({
+        id: Number(p.id),
+        name: String(p.name || '').trim(),
+        price: String(p.price || '').trim(),
+        category: String(p.category || 'Книги'),
+        tag: String(p.tag || '').trim(),
+        ...(p.image && { image: String(p.image) }),
+      }));
       const res = await fetch(`${API_URL}/admin/products`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${auth?.token}`,
         },
-        body: JSON.stringify({ products: localProducts }),
+        body: JSON.stringify({ products: payload }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setSaveError(text || `HTTP ${res.status}`);
+        return;
+      }
       if (data.ok) {
         await refetch();
       } else {
-        setSaveError(data.error || 'Помилка збереження');
+        setSaveError(data.error || `Помилка ${res.status}`);
       }
-    } catch {
-      setSaveError('Помилка з\'єднання');
+    } catch (err) {
+      setSaveError((err as Error).message || 'Помилка з\'єднання');
     } finally {
       setSaving(false);
     }
@@ -237,11 +252,14 @@ export const Admin = () => {
                   key={product.id}
                   className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-gray-300"
                 >
-                  <div
-                    className="w-16 h-16 rounded-xl shrink-0 flex items-center justify-center"
-                    style={{ background: getProductGradient(product.id, product.category) }}
-                  >
-                    <span className="text-white/40 text-2xl font-black">{product.name.charAt(0)}</span>
+                  <div className="w-16 h-16 rounded-xl shrink-0 overflow-hidden bg-gray-100">
+                    {product.image ? (
+                      <img src={product.image} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
+                        <span className="text-white/40 text-2xl font-black">{product.name.charAt(0)}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">{product.name}</p>
@@ -281,6 +299,45 @@ export const Admin = () => {
 
 function ProductEditModal({ product, onSave, onClose }: { product: Product; onSave: (p: Product) => void; onClose: () => void }) {
   const [form, setForm] = useState(product);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  const API_URL = import.meta.env.VITE_TELEGRAM_API_URL
+    ? import.meta.env.VITE_TELEGRAM_API_URL.replace(/\/telegram\/?$/, '').replace(/\/$/, '')
+    : '';
+  const auth = JSON.parse(sessionStorage.getItem('lumu_admin') || '{}')?.token;
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    setUploadError('');
+    setUploading(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const ext = file.name.split('.').pop() || 'jpg';
+      const res = await fetch(`${API_URL}/admin/upload-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth}` },
+        body: JSON.stringify({ base64, productId: product.id, ext }),
+      });
+      const data = await res.json();
+      if (data.ok && data.url) {
+        setForm(p => ({ ...p, image: data.url }));
+      } else {
+        setUploadError(data.error || 'Помилка завантаження');
+      }
+    } catch {
+      setUploadError('Помилка з\'єднання');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -297,6 +354,23 @@ function ProductEditModal({ product, onSave, onClose }: { product: Product; onSa
           </button>
         </div>
         <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-1">Фото</label>
+            <div className="flex items-center gap-4">
+              {form.image ? (
+                <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" />
+              ) : (
+                <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Немає</div>
+              )}
+              <label className="cursor-pointer">
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+                <span className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700">
+                  {uploading ? 'Завантаження...' : 'Завантажити фото'}
+                </span>
+              </label>
+            </div>
+            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+          </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">Назва</label>
             <input

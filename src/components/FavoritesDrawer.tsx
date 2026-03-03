@@ -67,13 +67,14 @@ export const FavoritesDrawer = () => {
                       exit={{ opacity: 0, x: -20, height: 0 }}
                       className="flex gap-4 bg-gray-50 rounded-2xl p-3"
                     >
-                      <div
-                        className="w-20 h-20 rounded-xl shrink-0 flex items-center justify-center"
-                        style={{ background: getProductGradient(product.id, product.category) }}
-                      >
-                        <span className="text-white/40 text-2xl font-black select-none">
-                          {product.name.charAt(0)}
-                        </span>
+                      <div className="w-20 h-20 rounded-xl shrink-0 overflow-hidden">
+                        {product.image ? (
+                          <img src={product.image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
+                            <span className="text-white/40 text-2xl font-black select-none">{product.name.charAt(0)}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>

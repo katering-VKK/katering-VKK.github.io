@@ -163,14 +163,18 @@ export const ProductGrid = () => {
                     {product.tag}
                   </span>
                 )}
-                <div
-                  className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center relative"
-                  style={{ background: getProductGradient(product.id, product.category) }}
-                >
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.15)_100%)]" />
-                  <span className="text-white/40 text-7xl font-black select-none drop-shadow-lg relative z-10 group-hover:scale-110 transition-transform">
-                    {product.name.charAt(0)}
-                  </span>
+                <div className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center relative overflow-hidden">
+                  {product.image ? (
+                    <img src={product.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0" style={{ background: getProductGradient(product.id, product.category) }} />
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.15)_100%)]" />
+                      <span className="text-white/40 text-7xl font-black select-none drop-shadow-lg relative z-10 group-hover:scale-110 transition-transform">
+                        {product.name.charAt(0)}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 

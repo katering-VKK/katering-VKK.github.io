@@ -2,12 +2,12 @@ export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'http://localhost:3000'];
   if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
-  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://lumu.com.ua');
-  res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : allowed[0]);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const auth = req.headers.authorization;
   const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -15,28 +15,37 @@ export default async function handler(req, res) {
   const ghToken = process.env.GITHUB_TOKEN;
 
   if (!adminToken || !ghToken) {
-    return res.status(500).json({ error: 'Admin or GitHub not configured' });
+    return res.status(500).json({ ok: false, error: 'Not configured' });
   }
   if (token !== adminToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   } catch {
-    return res.status(400).json({ error: 'Invalid JSON' });
+    return res.status(400).json({ ok: false, error: 'Invalid JSON' });
   }
 
-  const products = body?.products;
-  if (!Array.isArray(products)) {
-    return res.status(400).json({ error: 'Missing products array' });
+  const { base64, productId, ext = 'jpg' } = body;
+  if (!base64 || !productId) {
+    return res.status(400).json({ ok: false, error: 'Missing base64 or productId' });
   }
 
   const repo = process.env.GITHUB_REPO || 'katering-VKK/katering-VKK.github.io';
-  const filePath = 'public/products.json';
-  const content = JSON.stringify(products, null, 2);
-  const encoded = Buffer.from(content).toString('base64');
+  const filePath = `public/images/products/${productId}.${ext.replace(/[^a-z0-9]/gi, '') || 'jpg'}`;
+
+  let content;
+  try {
+    content = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64').toString('base64');
+  } catch {
+    return res.status(400).json({ ok: false, error: 'Invalid base64' });
+  }
+
+  if (content.length > 1024 * 1024) {
+    return res.status(400).json({ ok: false, error: 'Image too large (max 1MB)' });
+  }
 
   try {
     const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
@@ -46,7 +55,6 @@ export default async function handler(req, res) {
         'X-GitHub-Api-Version': '2022-11-28',
       },
     });
-
     let sha = null;
     if (getRes.ok) {
       const file = await getRes.json();
@@ -58,7 +66,7 @@ export default async function handler(req, res) {
         const errJson = JSON.parse(err);
         msg = errJson.message || err;
       } catch {
-        msg = err.slice(0, 200) || `HTTP ${getRes.status}`;
+        msg = err.slice(0, 150);
       }
       return res.status(502).json({ ok: false, error: msg });
     }
@@ -72,27 +80,28 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: 'Admin: оновлення товарів',
-        content: encoded,
+        message: `Admin: фото товару ${productId}`,
+        content,
         sha: sha,
       }),
     });
 
     if (!putRes.ok) {
       const err = await putRes.text();
-      let msg = 'GitHub commit failed';
+      let msg = 'Upload failed';
       try {
         const errJson = JSON.parse(err);
         msg = errJson.message || err;
       } catch {
-        msg = err.slice(0, 200) || `HTTP ${putRes.status}`;
+        msg = err.slice(0, 150);
       }
       return res.status(502).json({ ok: false, error: msg });
     }
 
-    return res.status(200).json({ ok: true });
+    const safeExt = (String(ext).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg').slice(0, 4);
+    const imageUrl = `/images/products/${productId}.${safeExt}`;
+    return res.status(200).json({ ok: true, url: imageUrl });
   } catch (err) {
-    console.error('[admin] Error:', err);
-    return res.status(502).json({ error: 'Failed to update' });
+    return res.status(502).json({ ok: false, error: (err && err.message) || 'Failed' });
   }
 }

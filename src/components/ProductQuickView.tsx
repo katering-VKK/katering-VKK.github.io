@@ -63,13 +63,14 @@ export const ProductQuickView = () => {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col sm:flex-row">
-            <div
-              className="aspect-square sm:w-[45%] flex items-center justify-center shrink-0"
-              style={{ background: getProductGradient(product.id, product.category) }}
-            >
-              <span className="text-white/30 text-8xl font-black select-none">
-                {product.name.charAt(0)}
-              </span>
+            <div className="aspect-square sm:w-[45%] flex items-center justify-center shrink-0 overflow-hidden">
+              {product.image ? (
+                <img src={product.image} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
+                  <span className="text-white/30 text-8xl font-black select-none">{product.name.charAt(0)}</span>
+                </div>
+              )}
             </div>
             <div className="p-6 sm:p-8 flex flex-col flex-1">
               <div className="flex justify-between items-start gap-4 mb-4">
@@ -144,13 +145,14 @@ export const ProductQuickView = () => {
                     onClick={() => setQuickViewProduct(p)}
                     className="flex flex-col items-center gap-2 group text-left"
                   >
-                    <div
-                      className="w-full aspect-square rounded-xl overflow-hidden transition-transform group-hover:scale-105"
-                      style={{ background: getProductGradient(p.id, p.category) }}
-                    >
-                      <span className="w-full h-full flex items-center justify-center text-white/30 text-2xl font-black">
-                        {p.name.charAt(0)}
-                      </span>
+                    <div className="w-full aspect-square rounded-xl overflow-hidden transition-transform group-hover:scale-105">
+                      {p.image ? (
+                        <img src={p.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(p.id, p.category) }}>
+                          <span className="text-white/30 text-2xl font-black">{p.name.charAt(0)}</span>
+                        </div>
+                      )}
                     </div>
                     <p className="text-xs font-bold truncate w-full">{p.name}</p>
                     <p className="text-xs font-semibold text-gray-500">{p.price}</p>

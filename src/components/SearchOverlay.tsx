@@ -118,13 +118,14 @@ export const SearchOverlay = () => {
                           onClick={() => { addToCart(product); setSearchOpen(false); }}
                           className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left group"
                         >
-                          <div
-                            className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center"
-                            style={{ background: getProductGradient(product.id, product.category) }}
-                          >
-                            <span className="text-white/40 text-xl font-black select-none">
-                              {product.name.charAt(0)}
-                            </span>
+                          <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden">
+                            {product.image ? (
+                              <img src={product.image} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
+                                <span className="text-white/40 text-xl font-black select-none">{product.name.charAt(0)}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>

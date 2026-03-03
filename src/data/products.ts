@@ -4,6 +4,7 @@ export interface Product {
   price: string;
   category: string;
   tag: string;
+  image?: string;
 }
 
 export function parsePrice(price: string): number {
