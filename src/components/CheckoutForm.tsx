@@ -22,18 +22,20 @@ const initialForm: FormData = {
   comment: '',
 };
 
-async function sendToTelegram(text: string): Promise<boolean> {
+async function sendToTelegram(text: string): Promise<{ ok: boolean; error?: string }> {
   const apiUrl = import.meta.env.VITE_TELEGRAM_API_URL;
-  const endpoint = apiUrl ? `${apiUrl.replace(/\/$/, '')}/telegram` : '/api/telegram';
+  const endpoint = apiUrl ? `${apiUrl.replace(/\/telegram\/?$/, '').replace(/\/$/, '')}/telegram` : '/api/telegram';
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
     });
-    return res.ok;
-  } catch {
-    return false;
+    if (res.ok) return { ok: true };
+    const err = await res.text();
+    return { ok: false, error: err || `HTTP ${res.status}` };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || 'Помилка мережі' };
   }
 }
 
@@ -93,10 +95,10 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
       `💰 <b>Разом: ${cartTotal}</b>`,
     ];
     const text = lines.filter(Boolean).join('\n');
-    const ok = await sendToTelegram(text);
+    const result = await sendToTelegram(text);
     setLoading(false);
-    if (ok) onSuccess();
-    else setErrors({ name: 'Помилка відправки. Спробуйте ще раз або зателефонуйте.' });
+    if (result.ok) onSuccess();
+    else setErrors({ name: result.error || 'Помилка відправки. Спробуйте ще раз або зателефонуйте.' });
   };
 
   return (

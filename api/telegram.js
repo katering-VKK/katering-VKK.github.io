@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua'];
-  if (origin.endsWith('.vercel.app')) allowed.push(origin);
+  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'https://katering-vkk.github.io'];
+  if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
   res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://lumu.com.ua');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
