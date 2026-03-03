@@ -18,23 +18,42 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const auth = req.headers.authorization;
-  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
   const adminToken = process.env.ADMIN_TOKEN;
   const ghToken = process.env.GITHUB_TOKEN;
 
   if (!adminToken || !ghToken) {
     return res.status(500).json({ ok: false, error: 'Not configured' });
   }
-  if (token !== adminToken) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
+  let token = null;
+  let body = {};
+  const ct = (req.headers['content-type'] || '').toLowerCase();
+
+  if (ct.includes('application/x-www-form-urlencoded')) {
+    try {
+      const parsed = typeof req.body === 'string'
+        ? Object.fromEntries(new URLSearchParams(req.body))
+        : (req.body && typeof req.body === 'object' ? req.body : {});
+      token = parsed.token || null;
+      body = {
+        base64: parsed.base64,
+        productId: parsed.productId,
+        ext: parsed.ext || 'jpg',
+      };
+    } catch {
+      return res.status(400).json({ ok: false, error: 'Invalid form' });
+    }
+  } else {
+    token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
+    try {
+      body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+    } catch {
+      return res.status(400).json({ ok: false, error: 'Invalid JSON' });
+    }
   }
 
-  let body;
-  try {
-    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  } catch {
-    return res.status(400).json({ ok: false, error: 'Invalid JSON' });
+  if (token !== adminToken) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
 
   const { base64, productId, ext = 'jpg' } = body;

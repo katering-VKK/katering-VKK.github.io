@@ -469,13 +469,16 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
     setUploading(true);
     try {
       const base64 = await resizeImage(file);
-      // Завжди jpg — resizeImage конвертує в JPEG
+      // form-urlencoded — без preflight CORS (без custom headers)
+      const body = new URLSearchParams();
+      body.set('token', authToken || '');
+      body.set('base64', base64);
+      body.set('productId', String(product.id));
+      body.set('ext', 'jpg');
       const res = await fetch(`${apiUrl}/admin/upload-image`, {
         method: 'POST',
-        mode: 'cors',
-        credentials: 'omit',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ base64, productId: product.id, ext: 'jpg' }),
+        body: body.toString(),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       const text = await res.text();
       let data: { ok?: boolean; url?: string; error?: string } = {};
@@ -492,7 +495,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
       }
     } catch (err) {
       const msg = (err as Error).message || 'Помилка завантаження';
-      setUploadError(msg.includes('fetch') || msg.includes('Failed') ? `${msg} Відкрийте адмінку через Vercel (ADMIN_DEPLOY.md) — same-origin, без CORS.` : msg);
+      setUploadError(msg.includes('fetch') || msg.includes('Failed') ? `${msg}` : msg);
     } finally {
       setUploading(false);
       e.target.value = '';
