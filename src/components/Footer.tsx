@@ -123,6 +123,10 @@ export const Footer = () => {
                   Контакти
                   <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Link>
+                <Link to="/#reviews" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
+                  Наші огляди
+                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               </nav>
             </div>
 
