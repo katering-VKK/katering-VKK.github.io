@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useStore } from '../store';
 import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
 import { categories } from '../data/products';
+
+const ADMIN_CATEGORIES = categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу');
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'Книги': <BookOpen className="w-5 h-5" />,
+  'Іграшки': <Gamepad2 className="w-5 h-5" />,
+  'Власне виробництво': <Sparkles className="w-5 h-5" />,
+  'Творчість': <Palette className="w-5 h-5" />,
+  'Настільні ігри': <Dice5 className="w-5 h-5" />,
+  'Інше': <Sparkles className="w-5 h-5" />,
+};
 
 const ADMIN_KEY = 'lumu_admin';
 const API_URL = import.meta.env.VITE_TELEGRAM_API_URL
@@ -81,13 +91,13 @@ export const Admin = () => {
     setEditing(null);
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = (category: string) => {
     const maxId = localProducts.reduce((m, p) => Math.max(m, p.id), 0);
     const newProduct: Product = {
       id: maxId + 1,
       name: 'Новий товар',
       price: '0 ₴',
-      category: 'Книги',
+      category,
       tag: '',
     };
     setLocalProducts(prev => [...prev, newProduct]);
@@ -240,56 +250,18 @@ export const Admin = () => {
         {loading ? (
           <div className="py-20 text-center text-gray-400">Завантаження...</div>
         ) : (
-          <>
-            <button
-              onClick={handleAddProduct}
-              className="mb-6 flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Додати товар
-            </button>
-
-            <div className="grid gap-4">
-              {localProducts.map(product => (
-                <div
-                  key={product.id}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-gray-300"
-                >
-                  <div className="w-16 h-16 rounded-xl shrink-0 overflow-hidden bg-gray-100">
-                    {product.image ? (
-                      <img src={product.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
-                        <span className="text-white/40 text-2xl font-black">{product.name.charAt(0)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold truncate">{product.name}</p>
-                    <p className="text-sm text-gray-500">{product.category} · {product.tag || '—'} · {product.price}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setEditing(product)}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProduct(product.id)}
-                      className="p-2 hover:bg-red-50 text-red-500 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+          <AdminSections
+            localProducts={localProducts}
+            onEdit={setEditing}
+            onDelete={handleDeleteProduct}
+            onAdd={handleAddProduct}
+            getProductGradient={getProductGradient}
+          />
         )}
       </div>
 
-      {editing && (
+      <AnimatePresence>
+        {editing && (
         <ProductEditModal
           product={editing}
           onSave={handleSaveProduct}
@@ -297,10 +269,154 @@ export const Admin = () => {
           apiUrl={API_URL}
           authToken={auth?.token}
         />
-      )}
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
+
+function AdminSections({
+  localProducts,
+  onEdit,
+  onDelete,
+  onAdd,
+  getProductGradient,
+}: {
+  localProducts: Product[];
+  onEdit: (p: Product) => void;
+  onDelete: (id: number) => void;
+  onAdd: (category: string) => void;
+  getProductGradient: (id: number, category: string) => string;
+}) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(ADMIN_CATEGORIES.map(c => [c, true]))
+  );
+
+
+  const byCategory = useMemo(() => {
+    const map: Record<string, Product[]> = {};
+    for (const c of ADMIN_CATEGORIES) map[c] = [];
+    for (const p of localProducts) {
+      if (map[p.category]) map[p.category].push(p);
+      else (map['Інше'] = map['Інше'] ?? []).push(p);
+    }
+    return map;
+  }, [localProducts]);
+
+  const toggle = (cat: string) => setExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
+
+  const catsToShow = useMemo(() => {
+    const list = [...ADMIN_CATEGORIES];
+    if ((byCategory['Інше']?.length ?? 0) > 0) list.push('Інше');
+    return list;
+  }, [byCategory]);
+
+  return (
+    <div className="space-y-4">
+      {catsToShow.map(cat => {
+        const items = byCategory[cat] ?? [];
+        const isOpen = expanded[cat] ?? true;
+        const icon = CATEGORY_ICONS[cat];
+        return (
+          <motion.section
+            key={cat}
+            initial={false}
+            className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden"
+          >
+            <button
+              onClick={() => toggle(cat)}
+              className="w-full flex items-center gap-4 px-6 py-4 text-left hover:bg-gray-50/80 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center shrink-0">
+                {icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-gray-900">{cat}</h2>
+                <p className="text-sm text-gray-500">{items.length} товарів</p>
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); onAdd(cat); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Додати
+              </button>
+              <span className="text-gray-400">
+                {isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+              </span>
+            </button>
+
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-6 pb-6 pt-2 border-t border-gray-100">
+                    {items.length === 0 ? (
+                      <div className="py-12 text-center text-gray-400 rounded-xl border-2 border-dashed border-gray-200">
+                        <p className="mb-2">Немає товарів у цьому розділі</p>
+                        <button
+                          onClick={() => onAdd(cat)}
+                          className="inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Додати перший товар
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3">
+                        {items.map(product => (
+                          <div
+                            key={product.id}
+                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors"
+                          >
+                            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm">
+                              {product.image ? (
+                                <img src={product.image} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
+                                  <span className="text-white/50 text-xl font-black">{product.name.charAt(0)}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                              <p className="text-sm text-gray-500">{product.tag || '—'} · {product.price}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => onEdit(product)}
+                                className="p-2.5 hover:bg-violet-100 text-violet-600 rounded-xl transition-colors"
+                                title="Редагувати"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => onDelete(product.id)}
+                                className="p-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
+                                title="Видалити"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.section>
+        );
+      })}
+    </div>
+  );
+}
 
 function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
   product: Product; onSave: (p: Product) => void; onClose: () => void;
@@ -379,26 +495,29 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96 }}
         onClick={e => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6"
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
       >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-bold">Редагувати товар #{product.id}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-            <X className="w-5 h-5" />
-          </button>
+        <div className="bg-gradient-to-br from-violet-50 to-white px-6 py-5 border-b border-gray-100">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-900">Редагувати товар</h2>
+            <button onClick={onClose} className="p-2 hover:bg-white/80 rounded-xl transition-colors">
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-0.5">#{product.id} · {form.category}</p>
         </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">Фото</label>
-            <div className="flex items-center gap-4">
+        <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+          <div className="flex gap-4 items-start">
+            <div className="shrink-0">
               {form.image ? (
                 <div className="relative group">
-                  <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = 'Завантаження...'; }} />
+                  <img src={form.image} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
                   <button
                     type="button"
                     onClick={() => setForm(p => ({ ...p, image: undefined }))}
@@ -409,67 +528,69 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
                   </button>
                 </div>
               ) : (
-                <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Немає</div>
+                <div className="w-24 h-24 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-2 border-dashed border-gray-200">Фото</div>
               )}
+              <label className={`mt-2 block ${!apiUrl ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading || !apiUrl} />
+                <span className="inline-block px-3 py-1.5 bg-violet-100 text-violet-700 hover:bg-violet-200 rounded-lg text-xs font-medium cursor-pointer transition-colors">
+                  {uploading ? '…' : 'Завантажити'}
+                </span>
+              </label>
+            </div>
+            <div className="flex-1 min-w-0 space-y-4">
               <div>
-                <label className={`cursor-pointer inline-block ${!apiUrl ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading || !apiUrl} />
-                  <span className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700">
-                    {uploading ? 'Завантаження...' : 'Завантажити фото'}
-                  </span>
-                </label>
-                {!apiUrl && <p className="text-[10px] text-amber-600 mt-1">Потрібен VITE_TELEGRAM_API_URL</p>}
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Назва</label>
+                <input
+                  value={form.name}
+                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                  placeholder="Назва товару"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Ціна</label>
+                  <input
+                    value={form.price}
+                    onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                    placeholder="450 ₴"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Категорія</label>
+                  <select
+                    value={form.category}
+                    onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-white"
+                  >
+                    {ADMIN_CATEGORIES.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Тег</label>
+                <input
+                  value={form.tag}
+                  onChange={e => setForm(p => ({ ...p, tag: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                  placeholder="Хіт продажу, New, Розмальовки..."
+                />
               </div>
             </div>
-            {uploadError && <p className="text-xs text-red-500 mt-1 break-all">{uploadError}</p>}
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">Назва</label>
-            <input
-              value={form.name}
-              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">Ціна</label>
-            <input
-              value={form.price}
-              onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200"
-              placeholder="450 ₴"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">Категорія</label>
-            <select
-              value={form.category}
-              onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200"
-            >
-              {categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу').map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">Тег / підкатегорія</label>
-            <input
-              value={form.tag}
-              onChange={e => setForm(p => ({ ...p, tag: e.target.value }))}
-              className="w-full px-4 py-2 rounded-xl border border-gray-200"
-              placeholder="Хіт продажу, New, Розмальовки..."
-            />
-          </div>
+          {uploadError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{uploadError}</p>}
         </div>
-        <div className="mt-6 flex gap-3">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
           <button
             onClick={() => onSave(form)}
-            className="flex-1 bg-black text-white py-3 rounded-xl font-bold"
+            className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-xl font-semibold transition-colors"
           >
             Зберегти
           </button>
-          <button onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl font-medium">
+          <button onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors">
             Скасувати
           </button>
         </div>
