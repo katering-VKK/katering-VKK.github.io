@@ -1,11 +1,25 @@
-import React from 'react';
-import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Minus, Plus, Trash2, ShoppingBag, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { getProductGradient } from '../data/products';
+import { CheckoutForm } from './CheckoutForm';
+
+type Step = 'cart' | 'checkout' | 'thanks';
 
 export const CartDrawer = () => {
-  const { cart, cartCount, cartTotal, isCartOpen, setCartOpen, removeFromCart, updateQty } = useStore();
+  const { cart, cartCount, cartTotal, isCartOpen, setCartOpen, removeFromCart, updateQty, clearCart } = useStore();
+  const [step, setStep] = useState<Step>('cart');
+
+  const handleClose = () => {
+    setCartOpen(false);
+    setTimeout(() => setStep('cart'), 300);
+  };
+
+  const handleOrderSuccess = () => {
+    setStep('thanks');
+    clearCart();
+  };
 
   return (
     <AnimatePresence>
@@ -16,7 +30,7 @@ export const CartDrawer = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
-            onClick={() => setCartOpen(false)}
+            onClick={handleClose}
           />
           <motion.div
             initial={{ x: '100%' }}
@@ -25,27 +39,36 @@ export const CartDrawer = () => {
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="fixed top-0 right-0 h-full w-full max-w-md bg-white z-[80] flex flex-col shadow-2xl"
           >
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <ShoppingBag className="w-5 h-5" />
-                <h2 className="text-lg font-bold uppercase tracking-wider">Кошик</h2>
-                <span className="bg-black text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{cartCount}</span>
+            {step === 'thanks' ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', damping: 15 }}
+                  className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6"
+                >
+                  <CheckCircle className="w-10 h-10 text-emerald-600" />
+                </motion.div>
+                <h3 className="text-2xl font-bold mb-2">Дякуємо за замовлення!</h3>
+                <p className="text-gray-500 mb-6">
+                  Ми зв'яжемося з вами найближчим часом для підтвердження.
+                </p>
+                <button
+                  onClick={handleClose}
+                  className="bg-black text-white px-8 py-3 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-gray-800 transition-colors"
+                >
+                  Закрити
+                </button>
               </div>
-              <button
-                onClick={() => setCartOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {cart.length === 0 ? (
+            ) : step === 'checkout' ? (
+              <CheckoutForm onBack={() => setStep('cart')} onSuccess={handleOrderSuccess} />
+            ) : cart.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4 px-6">
                 <ShoppingBag className="w-16 h-16 opacity-20" />
                 <p className="text-lg font-medium">Кошик порожній</p>
                 <p className="text-sm text-center">Додайте товари з каталогу</p>
                 <button
-                  onClick={() => setCartOpen(false)}
+                  onClick={handleClose}
                   className="mt-4 bg-black text-white px-8 py-3 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-gray-800 transition-colors"
                 >
                   До каталогу
@@ -53,6 +76,20 @@ export const CartDrawer = () => {
               </div>
             ) : (
               <>
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <ShoppingBag className="w-5 h-5" />
+                    <h2 className="text-lg font-bold uppercase tracking-wider">Кошик</h2>
+                    <span className="bg-black text-white text-xs font-bold px-2.5 py-0.5 rounded-full">{cartCount}</span>
+                  </div>
+                  <button
+                    onClick={handleClose}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
                 <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
                   <AnimatePresence mode="popLayout">
                     {cart.map(({ product, qty }) => (
@@ -112,11 +149,14 @@ export const CartDrawer = () => {
                     <span className="text-sm text-gray-500 uppercase tracking-wider font-medium">Разом</span>
                     <span className="text-xl font-bold">{cartTotal}</span>
                   </div>
-                  <button className="w-full bg-black text-white py-4 rounded-full font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors text-sm">
+                  <button
+                    onClick={() => setStep('checkout')}
+                    className="w-full bg-black text-white py-4 rounded-full font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors text-sm"
+                  >
                     Оформити замовлення
                   </button>
                   <button
-                    onClick={() => setCartOpen(false)}
+                    onClick={handleClose}
                     className="w-full text-center text-sm text-gray-500 hover:text-black transition-colors font-medium"
                   >
                     Продовжити покупки
