@@ -1,26 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { allProducts, categories, getProductGradient } from '../data/products';
+import { allProducts, categories, getProductGradient, parsePrice } from '../data/products';
 import { useStore } from '../store';
 
 const ITEMS_PER_PAGE = 12;
+type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
 export const ProductGrid = () => {
   const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite, setQuickViewProduct } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('default');
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, activeTag]);
+  }, [activeCategory, activeTag, sortBy]);
 
-  const filteredProducts = allProducts.filter(product => {
-    if (activeCategory === 'Хіт продажу') return product.tag === 'Хіт продажу';
-    const catMatch = activeCategory === 'Всі' || product.category === activeCategory;
-    const tagMatch = !activeTag || product.tag === activeTag;
-    return catMatch && tagMatch;
-  });
+  const filteredProducts = useMemo(() => {
+    let list = allProducts.filter(product => {
+      if (activeCategory === 'Хіт продажу') return product.tag === 'Хіт продажу';
+      const catMatch = activeCategory === 'Всі' || product.category === activeCategory;
+      const tagMatch = !activeTag || product.tag === activeTag;
+      return catMatch && tagMatch;
+    });
+    if (sortBy === 'price-asc') list = [...list].sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+    else if (sortBy === 'price-desc') list = [...list].sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+    else if (sortBy === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [activeCategory, activeTag, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -75,6 +83,32 @@ export const ProductGrid = () => {
               }`}
             >
               {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sort */}
+      <div className="flex flex-wrap items-center gap-4 mb-8">
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-500">Сортування:</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: 'default' as SortOption, label: 'За замовчуванням' },
+            { value: 'price-asc' as SortOption, label: 'Ціна: спочатку дешевші' },
+            { value: 'price-desc' as SortOption, label: 'Ціна: спочатку дорожчі' },
+            { value: 'name' as SortOption, label: 'За назвою' },
+          ].map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setSortBy(opt.value)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                sortBy === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {opt.label}
             </button>
           ))}
         </div>

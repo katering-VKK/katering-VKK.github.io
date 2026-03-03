@@ -72,14 +72,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setActiveTag(null);
   }, []);
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, qty = 1) => {
     setCart(prev => {
       const existing = prev.find(i => i.product.id === product.id);
-      if (existing) return prev.map(i => i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { product, qty: 1 }];
+      if (existing) return prev.map(i => i.product.id === product.id ? { ...i, qty: i.qty + qty } : i);
+      return [...prev, { product, qty }];
     });
     setCartOpen(true);
-    showToast('Додано в кошик');
+    showToast(qty > 1 ? `Додано ${qty} шт. в кошик` : 'Додано в кошик');
   }, [showToast]);
 
   const removeFromCart = useCallback((productId: number) => {

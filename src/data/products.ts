@@ -6,6 +6,10 @@ export interface Product {
   tag: string;
 }
 
+export function parsePrice(price: string): number {
+  return parseInt(price.replace(/\s/g, '').replace('₴', ''), 10) || 0;
+}
+
 const categoryHueRanges: Record<string, [number, number]> = {
   'Книги': [0, 40],
   'Іграшки': [190, 250],
