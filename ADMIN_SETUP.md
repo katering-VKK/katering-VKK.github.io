@@ -11,7 +11,7 @@
 1. **GitHub** → репозиторій → **Settings** → **Secrets and variables** → **Actions**
 2. **New repository secret**
 3. Name: `VITE_TELEGRAM_API_URL`
-4. Value: `https://lumu-pearl.vercel.app/api` (без слеша в кінці)
+4. Value: `https://lumu-api.vercel.app/api` (без слеша в кінці)
 5. Збережіть. Після наступного push деплой підхопить змінну.
 
 ---
@@ -20,9 +20,9 @@
 
 **Пароль зберігається в Vercel, не в GitHub.**
 
-⚠️ **Важливо:** `ADMIN_TOKEN` має бути в тому ж Vercel-проекті, що обслуговує **lumu-pearl.vercel.app** (де розгорнутий API).
+⚠️ **Важливо:** `ADMIN_TOKEN` має бути в Vercel-проекті **lumu-api** (https://lumu-api.vercel.app).
 
-1. Відкрийте **https://vercel.com** → проект, домен якого **lumu-pearl.vercel.app**
+1. Відкрийте **https://vercel.com** → проект **lumu-api**
 2. **Settings** → **Environment Variables**
 3. Знайдіть `ADMIN_TOKEN` — це ваш пароль для входу
 4. Якщо немає — додайте: Name: `ADMIN_TOKEN`, Value: придумайте пароль (наприклад `lumu-admin-2024`)

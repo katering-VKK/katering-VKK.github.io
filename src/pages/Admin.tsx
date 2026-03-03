@@ -173,7 +173,7 @@ export const Admin = () => {
           )}
           {apiStatus === 'error' && (
             <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              API недоступний. Перевірте VITE_TELEGRAM_API_URL = https://lumu-pearl.vercel.app/api
+              API недоступний. Перевірте VITE_TELEGRAM_API_URL = https://lumu-api.vercel.app/api
             </p>
           )}
           <p className="mt-4 text-xs text-gray-400 text-center">
