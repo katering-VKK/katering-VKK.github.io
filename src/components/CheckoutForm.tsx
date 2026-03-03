@@ -61,22 +61,29 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
     return Object.keys(e).length === 0;
   };
 
+  const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    if (cart.length === 0) {
+      setErrors({ name: 'Кошик порожній. Додайте товари.' });
+      return;
+    }
     setLoading(true);
     const phone = formatPhoneForSubmit(form.phone);
+    const items = cart.map(({ product, qty }) => `• ${escapeHtml(product.name)} × ${qty} — ${product.price}`);
     const lines = [
       '🛒 <b>Нове замовлення</b>',
       '',
-      `👤 ${form.name.trim()}`,
+      `👤 ${escapeHtml(form.name.trim())}`,
       `📞 ${phone}`,
-      `✉️ ${form.email.trim()}`,
-      `📍 ${form.city.trim()}, ${form.address.trim()}`,
-      form.comment.trim() ? `💬 ${form.comment.trim()}` : '',
+      `✉️ ${escapeHtml(form.email.trim())}`,
+      `📍 ${escapeHtml(form.city.trim())}, ${escapeHtml(form.address.trim())}`,
+      form.comment.trim() ? `💬 ${escapeHtml(form.comment.trim())}` : '',
       '',
       '📦 <b>Товари:</b>',
-      ...cart.map(({ product, qty }) => `• ${product.name} × ${qty} — ${product.price}`),
+      ...items,
       '',
       `💰 <b>Разом: ${cartTotal}</b>`,
     ];
