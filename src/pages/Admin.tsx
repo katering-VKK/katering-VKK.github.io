@@ -37,7 +37,7 @@ export const Admin = () => {
 
   useEffect(() => {
     if (!API_URL) return;
-    fetch(`${API_URL}/admin/auth`)
+    fetch(`${API_URL}/admin/health`)
       .then(r => r.json())
       .then(d => setApiStatus(d.configured ? 'ok' : 'no-token'))
       .catch(() => setApiStatus('error'));
