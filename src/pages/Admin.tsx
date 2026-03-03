@@ -25,6 +25,7 @@ export const Admin = () => {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'no-token' | 'error'>('checking');
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -34,6 +35,14 @@ export const Admin = () => {
     setLocalProducts(products);
   }, [products]);
 
+  useEffect(() => {
+    if (!API_URL) return;
+    fetch(`${API_URL}/admin/auth`)
+      .then(r => r.json())
+      .then(d => setApiStatus(d.configured ? 'ok' : 'no-token'))
+      .catch(() => setApiStatus('error'));
+  }, [API_URL]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -42,9 +51,9 @@ export const Admin = () => {
       const res = await fetch(`${API_URL}/admin/auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password: password.trim() }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.ok && data.token) {
         sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token: data.token }));
         setAuth({ token: data.token });
@@ -52,8 +61,8 @@ export const Admin = () => {
       } else {
         setLoginError(data.error || 'Невірний пароль');
       }
-    } catch {
-      setLoginError('Помилка з\'єднання');
+    } catch (err) {
+      setLoginError('Помилка з\'єднання. Перевірте CORS чи API URL.');
     } finally {
       setLoginLoading(false);
     }
@@ -157,6 +166,16 @@ export const Admin = () => {
               Увійти
             </button>
           </form>
+          {apiStatus === 'no-token' && (
+            <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+              ADMIN_TOKEN не налаштований у Vercel. Додайте → Redeploy.
+            </p>
+          )}
+          {apiStatus === 'error' && (
+            <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+              API недоступний. Перевірте VITE_TELEGRAM_API_URL = https://lumu-pearl.vercel.app/api
+            </p>
+          )}
           <p className="mt-4 text-xs text-gray-400 text-center">
             Пароль — це <code className="bg-gray-100 px-1 rounded">ADMIN_TOKEN</code> з Vercel → Settings → Environment Variables
           </p>

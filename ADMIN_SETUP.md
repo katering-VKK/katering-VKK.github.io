@@ -20,11 +20,13 @@
 
 **Пароль зберігається в Vercel, не в GitHub.**
 
-1. Відкрийте **https://vercel.com** → проект **lumu**
+⚠️ **Важливо:** `ADMIN_TOKEN` має бути в тому ж Vercel-проекті, що обслуговує **lumu-pearl.vercel.app** (де розгорнутий API).
+
+1. Відкрийте **https://vercel.com** → проект, домен якого **lumu-pearl.vercel.app**
 2. **Settings** → **Environment Variables**
 3. Знайдіть `ADMIN_TOKEN` — це ваш пароль для входу
-4. Якщо немає — додайте: Name: `ADMIN_TOKEN`, Value: придумайте пароль (наприклад `lumu-secret-2025`)
-5. Redeploy проект після зміни
+4. Якщо немає — додайте: Name: `ADMIN_TOKEN`, Value: придумайте пароль (наприклад `lumu-admin-2024`)
+5. **Обовʼязково Redeploy** після додавання/зміни змінної (Deployments → … → Redeploy)
 
 ---
 
