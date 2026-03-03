@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Menu, X, ChevronDown, Rocket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
@@ -98,7 +99,7 @@ export const Navbar = () => {
         onMouseLeave={() => setActiveDropdown(null)}
       >
         <div className="max-w-[1920px] mx-auto px-6 lg:px-12 flex items-center justify-between h-full relative">
-          <a href="/" className="flex items-center gap-3 group z-50 relative">
+          <Link to="/" className="flex items-center gap-3 group z-50 relative">
              <div className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-all duration-500 ${isScrolled ? 'bg-black text-white' : 'bg-white/10 text-white backdrop-blur-md border border-white/20'}`}>
                <Rocket className="w-5 h-5 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform duration-500" />
              </div>
@@ -110,7 +111,7 @@ export const Navbar = () => {
                 Всесвіт
               </span>
             </div>
-          </a>
+          </Link>
 
           <div className="hidden lg:flex items-center gap-10 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             {navLinks.map((link) => (
@@ -361,6 +362,18 @@ export const Navbar = () => {
                   </AnimatePresence>
                 </div>
               ))}
+              
+              <div className="mt-6 pt-6 border-t border-white/10 flex flex-col gap-2">
+                <Link to="/delivery" onClick={() => setIsMobileMenuOpen(false)} className="py-3 text-gray-300 hover:text-white text-base">
+                  Доставка та оплата
+                </Link>
+                <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="py-3 text-gray-300 hover:text-white text-base">
+                  Про нас
+                </Link>
+                <Link to="/contacts" onClick={() => setIsMobileMenuOpen(false)} className="py-3 text-gray-300 hover:text-white text-base">
+                  Контакти
+                </Link>
+              </div>
               
               <div className="mt-8 flex flex-col gap-3">
                 <button

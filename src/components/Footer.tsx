@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Youtube, MapPin, Clock, Rocket, Phone, Mail, Heart, Send, ArrowUpRight, Sparkles } from 'lucide-react';
 import { useStore } from '../store';
 
@@ -114,24 +115,28 @@ export const Footer = () => {
             <div className="flex flex-col gap-5">
               <h4 className="text-[11px] uppercase text-purple-400 tracking-[0.2em] font-bold">Про нас</h4>
               <nav className="flex flex-col gap-3">
-                {['Історія бренду', 'Наші цінності', 'Блог', 'Кар\'єра', 'Контакти'].map(item => (
-                  <a key={item} href="#" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
-                    {item}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                ))}
+                <Link to="/about" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
+                  Про нас
+                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+                <Link to="/contacts" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
+                  Контакти
+                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               </nav>
             </div>
 
             <div className="flex flex-col gap-5">
               <h4 className="text-[11px] uppercase text-purple-400 tracking-[0.2em] font-bold">Клієнтам</h4>
               <nav className="flex flex-col gap-3">
-                {['Доставка та оплата', 'Повернення та обмін', 'Таблиця розмірів', 'FAQ', 'Публічна оферта'].map(item => (
-                  <a key={item} href="#" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
-                    {item}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                ))}
+                <Link to="/delivery" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
+                  Доставка та оплата
+                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+                <Link to="/delivery" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
+                  Повернення та обмін
+                  <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               </nav>
             </div>
 
