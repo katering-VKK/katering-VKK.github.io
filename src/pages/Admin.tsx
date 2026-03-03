@@ -294,48 +294,84 @@ export const Admin = () => {
           product={editing}
           onSave={handleSaveProduct}
           onClose={() => setEditing(null)}
+          apiUrl={API_URL}
+          authToken={auth?.token}
         />
       )}
     </motion.div>
   );
 };
 
-function ProductEditModal({ product, onSave, onClose }: { product: Product; onSave: (p: Product) => void; onClose: () => void }) {
+function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
+  product: Product; onSave: (p: Product) => void; onClose: () => void;
+  apiUrl: string; authToken?: string;
+}) {
   const [form, setForm] = useState(product);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
-  const API_URL = import.meta.env.VITE_TELEGRAM_API_URL
-    ? import.meta.env.VITE_TELEGRAM_API_URL.replace(/\/telegram\/?$/, '').replace(/\/$/, '')
-    : '';
-  const auth = JSON.parse(sessionStorage.getItem('lumu_admin') || '{}')?.token;
+  const resizeImage = (file: File, maxW = 800, maxH = 800, quality = 0.85): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxW || height > maxH) {
+          const r = Math.min(maxW / width, maxH / height);
+          width = Math.round(width * r);
+          height = Math.round(height * r);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Invalid image'));
+      };
+      img.src = url;
+    });
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
+    if (!apiUrl || !authToken) {
+      setUploadError('API не налаштований');
+      return;
+    }
     setUploadError('');
     setUploading(true);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(String(r.result));
-        r.onerror = reject;
-        r.readAsDataURL(file);
-      });
-      const ext = file.name.split('.').pop() || 'jpg';
-      const res = await fetch(`${API_URL}/admin/upload-image`, {
+      const base64 = await resizeImage(file);
+      // Завжди jpg — resizeImage конвертує в JPEG
+      const res = await fetch(`${apiUrl}/admin/upload-image`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth}` },
-        body: JSON.stringify({ base64, productId: product.id, ext }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ base64, productId: product.id, ext: 'jpg' }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { ok?: boolean; url?: string; error?: string } = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setUploadError(text?.slice(0, 150) || `HTTP ${res.status}`);
+        return;
+      }
       if (data.ok && data.url) {
         setForm(p => ({ ...p, image: data.url }));
       } else {
-        setUploadError(data.error || 'Помилка завантаження');
+        setUploadError(data.error || `Помилка ${res.status}`);
       }
-    } catch {
-      setUploadError('Помилка з\'єднання');
+    } catch (err) {
+      const msg = (err as Error).message || 'Помилка завантаження';
+      setUploadError(msg.includes('fetch') || msg.includes('Failed') ? `${msg}. Перевірте CORS та доступність API.` : msg);
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -362,7 +398,7 @@ function ProductEditModal({ product, onSave, onClose }: { product: Product; onSa
             <div className="flex items-center gap-4">
               {form.image ? (
                 <div className="relative group">
-                  <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" />
+                  <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" onError={() => setForm(p => ({ ...p, image: undefined }))} />
                   <button
                     type="button"
                     onClick={() => setForm(p => ({ ...p, image: undefined }))}
@@ -375,14 +411,17 @@ function ProductEditModal({ product, onSave, onClose }: { product: Product; onSa
               ) : (
                 <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Немає</div>
               )}
-              <label className="cursor-pointer">
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
-                <span className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700">
-                  {uploading ? 'Завантаження...' : 'Завантажити фото'}
-                </span>
-              </label>
+              <div>
+                <label className={`cursor-pointer inline-block ${!apiUrl ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading || !apiUrl} />
+                  <span className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700">
+                    {uploading ? 'Завантаження...' : 'Завантажити фото'}
+                  </span>
+                </label>
+                {!apiUrl && <p className="text-[10px] text-amber-600 mt-1">Потрібен VITE_TELEGRAM_API_URL</p>}
+              </div>
             </div>
-            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+            {uploadError && <p className="text-xs text-red-500 mt-1 break-all">{uploadError}</p>}
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-1">Назва</label>

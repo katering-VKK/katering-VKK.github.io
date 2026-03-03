@@ -66,6 +66,20 @@
 
 ---
 
+## Завантаження фото
+
+Фото зберігаються в `public/images/products/{id}.jpg` через GitHub API.
+
+**Що перевірити, якщо завантаження не працює:**
+
+1. **GITHUB_TOKEN** — має бути **classic** (`ghp_`), з scope **repo**. Fine-grained токени (`github_pat_`) можуть не працювати.
+2. **Папка існує** — у репо має бути `public/images/products/` (наприклад з `.gitkeep`).
+3. **Redeploy lumu-api** — після змін у Vercel env обовʼязково Redeploy.
+4. **CORS** — сайт має бути на `lumu.com.ua`, `github.io` або `localhost`.
+5. **Локально** — створіть `.env` з `VITE_TELEGRAM_API_URL=https://lumu-api.vercel.app/api`.
+
+---
+
 ## Використання
 
 1. Відкрийте https://lumu.com.ua/admin

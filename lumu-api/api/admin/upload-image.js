@@ -1,7 +1,15 @@
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'http://localhost:3000'];
-  if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
+  const allowed = [
+    'https://lumu.com.ua',
+    'https://www.lumu.com.ua',
+    'https://katering-VKK.github.io',
+    'https://katering-vkk.github.io',
+    'http://localhost:3000',
+  ];
+  if (origin.includes('vercel.app') || origin.includes('github.io')) {
+    if (!allowed.includes(origin)) allowed.push(origin);
+  }
   res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : allowed[0]);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -44,8 +52,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Invalid base64' });
   }
 
-  if (content.length > 1024 * 1024) {
-    return res.status(400).json({ ok: false, error: 'Image too large (max 1MB)' });
+  if (content.length > 2 * 1024 * 1024) {
+    return res.status(400).json({ ok: false, error: 'Image too large (max 2MB)' });
   }
 
   try {
