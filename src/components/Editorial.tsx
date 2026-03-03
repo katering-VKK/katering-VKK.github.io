@@ -27,10 +27,10 @@ const articles = [
 
 export const Editorial = () => {
   return (
-    <section className="py-32 bg-[#FDFBF7]">
+    <section className="py-32 bg-[var(--color-bobo-cream)]">
       <div className="container mx-auto px-6 lg:px-12">
         <div className="flex justify-between items-end mb-16">
-          <h2 className="text-4xl md:text-6xl font-display font-bold uppercase tracking-tight">
+          <h2 className="text-4xl md:text-6xl font-display font-extrabold uppercase tracking-tight">
             Журнал
           </h2>
           <a href="#" className="hidden md:block text-sm font-bold uppercase tracking-widest border-b border-black pb-1 hover:text-gray-600 transition-colors">

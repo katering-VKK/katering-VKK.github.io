@@ -123,12 +123,12 @@ export const Navbar = () => {
                   onClick={() => handleNavClick(link.category)}
                   className={`relative py-2 text-sm font-bold tracking-widest uppercase transition-colors duration-300 ${
                     activeDropdown === link.name 
-                      ? 'text-yellow-500' 
+                      ? 'text-[var(--color-bobo-yellow)]' 
                       : isScrolled ? 'text-gray-800 hover:text-black' : 'text-white/90 hover:text-white'
                   }`}
                 >
                   {link.name}
-                  <span className={`absolute -bottom-1 left-0 w-full h-[2px] bg-yellow-500 transform scale-x-0 transition-transform duration-300 origin-center ${activeDropdown === link.name ? 'scale-x-100' : 'group-hover:scale-x-100'}`}></span>
+                  <span className={`absolute -bottom-1 left-0 w-full h-[2px] bg-[var(--color-bobo-yellow)] transform scale-x-0 transition-transform duration-300 origin-center ${activeDropdown === link.name ? 'scale-x-100' : 'group-hover:scale-x-100'}`}></span>
                 </button>
                 
                 <AnimatePresence>
@@ -254,7 +254,7 @@ export const Navbar = () => {
                     key={cartCount}
                     initial={{ scale: 0.5 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-yellow-500 text-black text-[10px] font-bold flex items-center justify-center rounded-full"
+                    className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-[var(--color-bobo-yellow)] text-black text-[10px] font-bold flex items-center justify-center rounded-full"
                   >
                     {cartCount > 99 ? '99+' : cartCount}
                   </motion.span>
@@ -318,12 +318,12 @@ export const Navbar = () => {
                         e.stopPropagation();
                         handleNavClick(link.category);
                       }}
-                      className={`text-xl font-medium transition-colors ${mobileExpanded === link.name ? 'text-yellow-300' : 'group-hover:text-yellow-300'}`}
+                      className={`text-xl font-medium transition-colors ${mobileExpanded === link.name ? 'text-[var(--color-bobo-yellow)]' : 'group-hover:text-[var(--color-bobo-yellow)]'}`}
                     >
                       {link.name}
                     </button>
                     {link.subcategories && (
-                      <div className={`p-1 rounded-full transition-all ${mobileExpanded === link.name ? 'bg-yellow-300 text-black rotate-180' : 'bg-white/10'}`}>
+                      <div className={`p-1 rounded-full transition-all ${mobileExpanded === link.name ? 'bg-[var(--color-bobo-yellow)] text-black rotate-180' : 'bg-white/10'}`}>
                         <ChevronDown className="w-5 h-5" />
                       </div>
                     )}
@@ -340,7 +340,7 @@ export const Navbar = () => {
                         <div className="pl-4 pb-4 flex flex-col gap-3">
                           <button
                             onClick={() => handleNavClick(link.category)}
-                            className="py-2 text-yellow-300 font-bold flex items-center gap-2 text-base"
+                            className="py-2 text-[var(--color-bobo-yellow)] font-bold flex items-center gap-2 text-base"
                           >
                             <span className="w-1 h-1 bg-yellow-300 rounded-full"></span>
                             Дивитися все
@@ -351,7 +351,7 @@ export const Navbar = () => {
                               onClick={() => handleSubClick(sub)}
                               className="py-2 text-gray-300 hover:text-white flex items-center gap-2 text-base text-left"
                             >
-                              <span className="w-1 h-1 bg-yellow-300 rounded-full"></span>
+                              <span className="w-1 h-1 bg-[var(--color-bobo-yellow)] rounded-full"></span>
                               {sub.label}
                             </button>
                           ))}
@@ -379,7 +379,7 @@ export const Navbar = () => {
                 </button>
                 <button
                   onClick={() => { setCartOpen(true); setIsMobileMenuOpen(false); }}
-                  className="w-full bg-white text-black py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-yellow-300 transition-colors flex items-center justify-center gap-3"
+                  className="w-full bg-[var(--color-bobo-yellow)] text-black py-4 rounded-xl font-bold uppercase tracking-wide hover:brightness-110 transition-colors flex items-center justify-center gap-3"
                 >
                   <ShoppingBag className="w-5 h-5" />
                   Кошик {cartCount > 0 && `(${cartCount})`}

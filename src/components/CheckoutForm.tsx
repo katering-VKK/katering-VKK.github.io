@@ -56,7 +56,7 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
     const e: Partial<Record<keyof FormData, string>> = {};
     if (!form.name.trim()) e.name = 'Введіть ім\'я';
     if (!form.phone.trim()) e.phone = 'Введіть телефон';
-    else if (!isValidUAPhone(form.phone)) e.phone = 'Невірний формат (напр. 099 123 45 67)';
+    else if (!isValidUAPhone(form.phone)) e.phone = 'Невірний формат (068 364 22 05 або +380 99 123 45 67)';
     if (!form.email.trim()) e.email = 'Введіть email';
     else if (!isValidEmail(form.email)) e.email = 'Невірний email';
     if (!form.city.trim()) e.city = 'Введіть місто';

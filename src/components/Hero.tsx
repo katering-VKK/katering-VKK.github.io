@@ -9,10 +9,11 @@ export const Hero = () => {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(120,80,200,0.3)_0%,_transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(60,130,200,0.2)_0%,_transparent_50%)]" />
-        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,215,0,0.15)_0%,transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(139,92,246,0.25)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(99,102,241,0.2)_0%,_transparent_40%)]" />
+        <div className="absolute inset-0 bg-black/15" />
       </div>
 
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -69,14 +70,13 @@ export const Hero = () => {
         >
           <button
             onClick={() => navigateToCategory('Книги')}
-            className="group relative overflow-hidden bg-white text-black px-12 py-4 rounded-full font-bold text-sm transition-all hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] min-w-[180px] uppercase tracking-widest"
+            className="group relative overflow-hidden bg-[var(--color-bobo-yellow)] text-black px-12 py-4 rounded-full font-bold text-sm transition-all duration-300 hover:shadow-[0_0_40px_-8px_rgba(255,215,0,0.6)] hover:scale-[1.02] active:scale-[0.98] min-w-[180px] uppercase tracking-widest"
           >
-            <span className="relative z-10 group-hover:text-purple-900 transition-colors">Книги</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 to-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <span className="relative z-10">Книги</span>
           </button>
           <button
             onClick={() => navigateToCategory('Іграшки')}
-            className="group relative overflow-hidden bg-transparent border-2 border-white text-white px-12 py-4 rounded-full font-bold text-sm transition-all hover:bg-white/10 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] min-w-[180px] uppercase tracking-widest backdrop-blur-sm"
+            className="group relative overflow-hidden bg-white/10 border-2 border-white/80 text-white px-12 py-4 rounded-full font-bold text-sm transition-all duration-300 hover:bg-white/20 hover:border-white hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-[0.98] min-w-[180px] uppercase tracking-widest backdrop-blur-md"
           >
             <span className="relative z-10">Іграшки</span>
           </button>

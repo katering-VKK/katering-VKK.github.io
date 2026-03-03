@@ -8,7 +8,7 @@ export const Footer = () => {
   return (
     <footer className="relative overflow-hidden">
       {/* CTA Banner */}
-      <div className="relative bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 py-20 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-violet-700 via-purple-700 to-indigo-800 py-20 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-pink-500/20 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/3" />
@@ -32,7 +32,7 @@ export const Footer = () => {
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
             Приєднуйтесь до<br />
-            <span className="text-yellow-300">Маленького Всесвіту</span>
+            <span className="text-[var(--color-bobo-yellow)]">Маленького Всесвіту</span>
           </h2>
           <p className="text-white/70 text-base md:text-lg max-w-md mx-auto mb-10 font-light">
             Космічні новини, ексклюзивні знижки та натхнення для творчості
@@ -43,7 +43,7 @@ export const Footer = () => {
               placeholder="Ваш email..."
               className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-full pl-6 pr-40 py-4.5 text-white placeholder:text-white/40 focus:outline-none focus:bg-white/15 focus:border-white/40 transition-all text-sm"
             />
-            <button className="absolute right-1.5 top-1.5 bottom-1.5 bg-yellow-400 text-black px-7 rounded-full font-bold hover:bg-yellow-300 transition-all uppercase tracking-wider text-xs flex items-center gap-2 hover:shadow-[0_0_30px_rgba(250,204,21,0.3)]">
+            <button className="absolute right-1.5 top-1.5 bottom-1.5 bg-[var(--color-bobo-yellow)] text-black px-7 rounded-full font-bold hover:brightness-110 transition-all uppercase tracking-wider text-xs flex items-center gap-2 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] active:scale-[0.98]">
               <Send className="w-3.5 h-3.5" />
               Підписатися
             </button>

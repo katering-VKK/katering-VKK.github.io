@@ -15,7 +15,7 @@ import { Toast } from './components/Toast';
 export default function App() {
   return (
     <StoreProvider>
-      <div className="font-sans text-[#1A1A1A] bg-white">
+        <div className="font-sans text-[var(--color-bobo-black)] bg-white antialiased">
         <Navbar />
         <main>
           <Hero />

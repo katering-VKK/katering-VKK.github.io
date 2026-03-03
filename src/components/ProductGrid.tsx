@@ -62,12 +62,12 @@ export const ProductGrid = () => {
   };
 
   return (
-    <section id="product-grid" className="py-20 px-6 max-w-[1920px] mx-auto relative overflow-hidden min-h-screen">
-      <div className="absolute top-20 right-0 w-64 h-64 bg-purple-100 rounded-full blur-3xl -z-10 opacity-50"></div>
+    <section id="product-grid" className="py-20 px-6 max-w-[1920px] mx-auto relative overflow-hidden min-h-screen bg-white">
+      <div className="absolute top-20 right-0 w-64 h-64 bg-violet-100 rounded-full blur-3xl -z-10 opacity-40"></div>
 
       <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
         <div>
-          <h2 className="text-4xl md:text-5xl font-display font-bold tracking-tight uppercase text-gray-900">Каталог</h2>
+          <h2 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight uppercase text-gray-900">Каталог</h2>
           <p className="text-gray-400 text-sm mt-2">{filteredProducts.length} товарів</p>
         </div>
         
@@ -141,13 +141,13 @@ export const ProductGrid = () => {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
               key={product.id}
-              className="group cursor-pointer"
+              className="group cursor-pointer hover:-translate-y-1 transition-transform duration-300"
               onClick={() => setQuickViewProduct(product)}
             >
-              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl shadow-sm group-hover:shadow-xl transition-all duration-500">
+              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl shadow-card group-hover:shadow-card-hover transition-all duration-500">
                 {product.tag && (
                   <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full ${
-                    product.tag === 'Хіт продажу' ? 'bg-yellow-400 text-black' :
+                    product.tag === 'Хіт продажу' ? 'bg-[var(--color-bobo-yellow)] text-black' :
                     product.tag === 'New' ? 'bg-emerald-400 text-black' :
                     'bg-white/90 backdrop-blur-sm text-black'
                   }`}>
@@ -169,7 +169,7 @@ export const ProductGrid = () => {
                   className={`absolute top-3 right-3 p-2.5 rounded-full transition-all duration-300 shadow-lg z-20 ${
                     isFavorite(product.id)
                       ? 'bg-red-500 text-white opacity-100'
-                      : 'bg-white/90 backdrop-blur-sm text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500'
+                      : 'bg-white/90 backdrop-blur-sm text-gray-400 sm:opacity-0 sm:group-hover:opacity-100 opacity-100 hover:text-red-500'
                   }`}
                 >
                   <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-white' : ''}`} />
@@ -177,7 +177,7 @@ export const ProductGrid = () => {
 
                 <button
                   onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
-                  className={`absolute bottom-3 right-3 p-3 rounded-full opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 shadow-lg z-20 ${
+                  className={`absolute bottom-3 right-3 p-3 rounded-full sm:opacity-0 sm:translate-y-4 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 opacity-100 translate-y-0 transition-all duration-300 shadow-lg z-20 ${
                     addedId === product.id
                       ? 'bg-emerald-500 text-white'
                       : isInCart(product.id)
@@ -241,7 +241,7 @@ export const ProductGrid = () => {
                   onClick={() => handlePageChange(page)}
                   className={`w-10 h-10 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center ${
                     currentPage === page
-                      ? 'bg-yellow-400 text-black shadow-lg scale-110'
+                      ? 'bg-[var(--color-bobo-yellow)] text-black shadow-lg scale-110'
                       : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-black'
                   }`}
                 >

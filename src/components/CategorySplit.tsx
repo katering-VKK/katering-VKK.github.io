@@ -40,7 +40,7 @@ export const CategorySplit = () => {
   const { navigateToCategory } = useStore();
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24 bg-[var(--color-bobo-cream)]">
       <div className="container mx-auto px-6 lg:px-12">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 auto-rows-[280px] md:auto-rows-[360px]">
           {categories.map((cat, idx) => (
@@ -51,7 +51,7 @@ export const CategorySplit = () => {
               transition={{ delay: idx * 0.08 }}
               viewport={{ once: true }}
               onClick={() => navigateToCategory(cat.title)}
-              className={`relative group overflow-hidden rounded-3xl cursor-pointer ${
+              className={`relative group overflow-hidden rounded-3xl cursor-pointer shadow-card hover:shadow-card-hover transition-shadow duration-500 ${
                 idx < 2 ? 'col-span-1 md:col-span-1 lg:col-span-1' : ''
               }`}
             >
@@ -59,7 +59,7 @@ export const CategorySplit = () => {
                 className="absolute inset-0 transition-transform duration-700 group-hover:scale-110"
                 style={{ background: cat.gradient }}
               />
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 transition-colors duration-500" />
+              <div className="absolute inset-0 bg-black/5 group-hover:bg-black/20 transition-colors duration-500" />
               
               <div className="absolute inset-0 p-6 flex flex-col justify-between relative z-10">
                 <div className="flex justify-between items-start">
