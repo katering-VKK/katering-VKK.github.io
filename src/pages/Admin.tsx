@@ -398,7 +398,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
             <div className="flex items-center gap-4">
               {form.image ? (
                 <div className="relative group">
-                  <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" onError={() => setForm(p => ({ ...p, image: undefined }))} />
+                  <img src={form.image} alt="" className="w-20 h-20 object-cover rounded-xl border" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = 'Завантаження...'; }} />
                   <button
                     type="button"
                     onClick={() => setForm(p => ({ ...p, image: undefined }))}
