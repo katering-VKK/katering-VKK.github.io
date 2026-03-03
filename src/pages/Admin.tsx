@@ -426,7 +426,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
-  const resizeImage = (file: File, maxW = 800, maxH = 800, quality = 0.85): Promise<string> => {
+  const resizeImage = (file: File, maxW = 600, maxH = 600, quality = 0.75): Promise<string> => {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -469,6 +469,8 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
       // Завжди jpg — resizeImage конвертує в JPEG
       const res = await fetch(`${apiUrl}/admin/upload-image`, {
         method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
         body: JSON.stringify({ base64, productId: product.id, ext: 'jpg' }),
       });

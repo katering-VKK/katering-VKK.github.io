@@ -63,20 +63,29 @@
 | ADMIN_TOKEN   | Придумайте самі             | Пароль для входу в адмінку |
 | GITHUB_TOKEN  | GitHub → Settings → Tokens  | Коміт змін у репозиторій |
 | GITHUB_REPO   | (опційно)                   | `katering-VKK/katering-VKK.github.io` |
+| IMGBB_API_KEY | api.imgbb.com (безкоштовно) | Альтернатива для завантаження фото     |
 
 ---
 
 ## Завантаження фото
 
+Є два варіанти:
+
+### 1. GitHub (за замовчуванням)
 Фото зберігаються в `public/images/products/{id}.jpg` через GitHub API.
+
+### 2. ImgBB (якщо GitHub не працює)
+Додайте в Vercel → lumu-api → Environment Variables:
+- **IMGBB_API_KEY** — безкоштовний ключ з https://api.imgbb.com/ (реєстрація → API key)
+
+Якщо IMGBB_API_KEY задано, фото зберігаються на imgbb замість GitHub.
 
 **Що перевірити, якщо завантаження не працює:**
 
-1. **GITHUB_TOKEN** — має бути **classic** (`ghp_`), з scope **repo**. Fine-grained токени (`github_pat_`) можуть не працювати.
-2. **Папка існує** — у репо має бути `public/images/products/` (наприклад з `.gitkeep`).
+1. **GITHUB_TOKEN** — має бути **classic** (`ghp_`), з scope **repo**.
+2. **Папка існує** — у репо має бути `public/images/products/` (з `.gitkeep`).
 3. **Redeploy lumu-api** — після змін у Vercel env обовʼязково Redeploy.
-4. **CORS** — сайт має бути на `lumu.com.ua`, `github.io` або `localhost`.
-5. **Локально** — створіть `.env` з `VITE_TELEGRAM_API_URL=https://lumu-api.vercel.app/api`.
+4. **Альтернатива** — додайте IMGBB_API_KEY для завантаження через imgbb.
 
 ---
 
