@@ -2,12 +2,14 @@ import React from 'react';
 import { X, Heart, ShoppingBag, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
-import { allProducts, getProductGradient } from '../data/products';
+import { useProducts } from '../context/ProductsContext';
+import { getProductGradient } from '../data/products';
 
 export const FavoritesDrawer = () => {
   const { favorites, isFavOpen, setFavOpen, toggleFavorite, addToCart } = useStore();
 
-  const favProducts = allProducts.filter(p => favorites.includes(p.id));
+  const { products } = useProducts();
+  const favProducts = products.filter(p => favorites.includes(p.id));
 
   return (
     <AnimatePresence>

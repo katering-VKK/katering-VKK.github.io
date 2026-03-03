@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { allProducts, categories, getProductGradient, parsePrice } from '../data/products';
+import { useProducts } from '../context/ProductsContext';
+import { categories, getProductGradient, parsePrice } from '../data/products';
 import { useStore } from '../store';
 
 const ITEMS_PER_PAGE = 12;
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
 export const ProductGrid = () => {
+  const { products, loading } = useProducts();
   const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite, setQuickViewProduct } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
@@ -18,7 +20,7 @@ export const ProductGrid = () => {
   }, [activeCategory, activeTag, sortBy]);
 
   const filteredProducts = useMemo(() => {
-    let list = allProducts.filter(product => {
+    let list = products.filter(product => {
       if (activeCategory === 'Хіт продажу') return product.tag === 'Хіт продажу';
       const catMatch = activeCategory === 'Всі' || product.category === activeCategory;
       const tagMatch = !activeTag || product.tag === activeTag;
@@ -28,7 +30,7 @@ export const ProductGrid = () => {
     else if (sortBy === 'price-desc') list = [...list].sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
     else if (sortBy === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [activeCategory, activeTag, sortBy]);
+  }, [products, activeCategory, activeTag, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -43,7 +45,7 @@ export const ProductGrid = () => {
     document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleAddToCart = (product: typeof allProducts[0]) => {
+  const handleAddToCart = (product: typeof products[0]) => {
     addToCart(product);
     setAddedId(product.id);
     setTimeout(() => setAddedId(null), 1200);
@@ -128,9 +130,16 @@ export const ProductGrid = () => {
         </div>
       )}
 
+      {loading && (
+        <div className="py-20 text-center text-gray-400">
+          <div className="inline-block w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+          <p className="mt-4 text-sm">Завантаження каталогу...</p>
+        </div>
+      )}
+
       <motion.div 
         layout
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10"
+        className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10 ${loading ? 'opacity-0' : ''}`}
       >
         <AnimatePresence mode="popLayout">
           {currentProducts.map((product) => (

@@ -2,19 +2,21 @@ import React, { useEffect, useMemo } from 'react';
 import { X, ShoppingBag, Heart, Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
-import { allProducts, getProductGradient } from '../data/products';
+import { useProducts } from '../context/ProductsContext';
+import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
 
 export const ProductQuickView = () => {
+  const { products } = useProducts();
   const { quickViewProduct, setQuickViewProduct, addToCart, toggleFavorite, isFavorite } = useStore();
   const [qty, setQty] = React.useState(1);
 
   const relatedProducts = useMemo(() => {
     if (!quickViewProduct) return [];
-    return allProducts
+    return products
       .filter(p => p.category === quickViewProduct.category && p.id !== quickViewProduct.id)
       .slice(0, 4);
-  }, [quickViewProduct]);
+  }, [quickViewProduct, products]);
 
   useEffect(() => {
     setQty(1);

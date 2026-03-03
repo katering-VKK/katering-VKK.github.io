@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
-import { allProducts, getProductGradient } from '../data/products';
+import { useProducts } from '../context/ProductsContext';
+import { getProductGradient } from '../data/products';
 
 export const SearchOverlay = () => {
+  const { products } = useProducts();
   const { isSearchOpen, setSearchOpen, addToCart, navigateToCategory } = useStore();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,12 +33,12 @@ export const SearchOverlay = () => {
   const results = useMemo(() => {
     if (query.length < 2) return [];
     const q = query.toLowerCase();
-    return allProducts.filter(p =>
+    return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q) ||
       p.tag.toLowerCase().includes(q)
     ).slice(0, 12);
-  }, [query]);
+  }, [query, products]);
 
   const quickCategories = ['Книги', 'Іграшки', 'Творчість', 'Настільні ігри', 'Власне виробництво'];
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { StoreProvider } from './store';
+import { ProductsProvider } from './context/ProductsContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
@@ -13,12 +14,14 @@ import { DeliveryPayment } from './pages/DeliveryPayment';
 import { About } from './pages/About';
 import { Contacts } from './pages/Contacts';
 import { NotFound } from './pages/NotFound';
+import { Admin } from './pages/Admin';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 
 export default function App() {
   return (
     <StoreProvider>
+      <ProductsProvider>
       <BrowserRouter>
         <ScrollToTop />
         <div className="font-sans text-[var(--color-bobo-black)] bg-white antialiased">
@@ -29,6 +32,7 @@ export default function App() {
               <Route path="/delivery" element={<DeliveryPayment />} />
               <Route path="/about" element={<About />} />
               <Route path="/contacts" element={<Contacts />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
@@ -41,6 +45,7 @@ export default function App() {
           <ScrollToTopButton />
         </div>
       </BrowserRouter>
+      </ProductsProvider>
     </StoreProvider>
   );
 }
