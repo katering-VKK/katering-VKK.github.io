@@ -23,17 +23,13 @@ const initialForm: FormData = {
 };
 
 async function sendToTelegram(text: string): Promise<boolean> {
-  const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-  const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
-  if (!token || !chatId) {
-    console.log('[Checkout] Telegram not configured. Order:', text);
-    return true;
-  }
+  const apiUrl = import.meta.env.VITE_TELEGRAM_API_URL;
+  const endpoint = apiUrl ? `${apiUrl.replace(/\/$/, '')}/telegram` : '/api/telegram';
   try {
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      body: JSON.stringify({ text }),
     });
     return res.ok;
   } catch {
