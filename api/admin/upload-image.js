@@ -1,10 +1,19 @@
+function allowOrigin(origin) {
+  if (!origin) return '*';
+  try {
+    const h = new URL(origin).hostname;
+    if (h === 'localhost' || h === '127.0.0.1') return origin;
+    if (h.endsWith('github.io') || h.endsWith('vercel.app') || h.endsWith('lumu.com.ua')) return origin;
+  } catch {}
+  return '*';
+}
+
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'http://localhost:3000'];
-  if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
-  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : allowed[0]);
+  res.setHeader('Access-Control-Allow-Origin', allowOrigin(origin));
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -33,18 +42,41 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Missing base64 or productId' });
   }
 
+  const safeExt = (String(ext).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg').slice(0, 4);
   const repo = process.env.GITHUB_REPO || 'katering-VKK/katering-VKK.github.io';
-  const filePath = `public/images/products/${productId}.${ext.replace(/[^a-z0-9]/gi, '') || 'jpg'}`;
+  const filePath = `public/images/products/${productId}.${safeExt}`;
 
+  const rawBase64 = String(base64).replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
   let content;
   try {
-    content = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64').toString('base64');
+    content = Buffer.from(rawBase64, 'base64').toString('base64');
   } catch {
     return res.status(400).json({ ok: false, error: 'Invalid base64' });
   }
 
-  if (content.length > 1024 * 1024) {
-    return res.status(400).json({ ok: false, error: 'Image too large (max 1MB)' });
+  if (content.length > 2 * 1024 * 1024) {
+    return res.status(400).json({ ok: false, error: 'Image too large (max 2MB)' });
+  }
+
+  const imgbbKey = process.env.IMGBB_API_KEY;
+  if (imgbbKey) {
+    try {
+      const fd = new URLSearchParams();
+      fd.set('key', imgbbKey);
+      fd.set('image', rawBase64);
+      const ir = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: fd.toString(),
+      });
+      const idata = await ir.json();
+      if (idata?.data?.url) {
+        return res.status(200).json({ ok: true, url: idata.data.url });
+      }
+      return res.status(502).json({ ok: false, error: idata?.error?.message || 'ImgBB failed' });
+    } catch (e) {
+      return res.status(502).json({ ok: false, error: (e && e.message) || 'ImgBB error' });
+    }
   }
 
   try {
@@ -98,7 +130,6 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: msg });
     }
 
-    const safeExt = (String(ext).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg').slice(0, 4);
     const imageUrl = `/images/products/${productId}.${safeExt}`;
     return res.status(200).json({ ok: true, url: imageUrl });
   } catch (err) {

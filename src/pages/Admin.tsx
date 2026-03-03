@@ -19,9 +19,12 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ADMIN_KEY = 'lumu_admin';
-const API_URL = import.meta.env.VITE_TELEGRAM_API_URL
-  ? import.meta.env.VITE_TELEGRAM_API_URL.replace(/\/telegram\/?$/, '').replace(/\/$/, '')
-  : '';
+const API_URL = (() => {
+  const env = (import.meta.env.VITE_TELEGRAM_API_URL || '').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
+  if (env) return env;
+  if (typeof window !== 'undefined') return window.location.origin + '/api';
+  return '/api';
+})();
 
 export const Admin = () => {
   const { products, loading, refetch } = useProducts();
@@ -489,7 +492,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
       }
     } catch (err) {
       const msg = (err as Error).message || 'Помилка завантаження';
-      setUploadError(msg.includes('fetch') || msg.includes('Failed') ? `${msg}. Перевірте CORS та доступність API.` : msg);
+      setUploadError(msg.includes('fetch') || msg.includes('Failed') ? `${msg} Відкрийте адмінку через Vercel (ADMIN_DEPLOY.md) — same-origin, без CORS.` : msg);
     } finally {
       setUploading(false);
       e.target.value = '';
