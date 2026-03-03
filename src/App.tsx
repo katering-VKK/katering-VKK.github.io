@@ -24,7 +24,7 @@ export default function App() {
       <ProductsProvider>
       <BrowserRouter>
         <ScrollToTop />
-        <div className="font-sans text-[var(--color-bobo-black)] bg-white antialiased">
+        <div className="font-sans text-[var(--color-bobo-black)] bg-white antialiased overflow-x-hidden min-w-0">
           <Navbar />
           <main>
             <Routes>

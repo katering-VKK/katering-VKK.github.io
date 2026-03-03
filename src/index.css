@@ -16,8 +16,8 @@
 }
 
 @layer base {
-  html { scroll-behavior: smooth; }
-  body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+  body { font-feature-settings: "cv02", "cv03", "cv04", "cv11"; overflow-x: hidden; }
   *:focus-visible { outline: 2px solid var(--color-bobo-purple); outline-offset: 2px; }
 }
 
@@ -25,4 +25,9 @@
   .text-stroke { -webkit-text-stroke: 1px black; }
   .shadow-card { box-shadow: var(--shadow-card); }
   .shadow-card-hover { box-shadow: var(--shadow-card-hover); }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }

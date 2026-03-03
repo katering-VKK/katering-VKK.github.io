@@ -95,7 +95,7 @@ export const Navbar = () => {
         }`}
         onMouseLeave={() => setActiveDropdown(null)}
       >
-        <div className="max-w-[1920px] mx-auto px-6 lg:px-12 flex items-center justify-between h-full relative">
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between h-full relative">
           <Link to="/" className="flex items-center gap-3 group z-50 relative">
              <div className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-all duration-500 ${isScrolled ? 'bg-black text-white' : 'bg-white/10 text-white backdrop-blur-md border border-white/20'}`}>
                <Rocket className="w-5 h-5 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform duration-500" />

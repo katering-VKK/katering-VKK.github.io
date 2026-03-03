@@ -64,7 +64,7 @@ export const ProductGrid = () => {
   };
 
   return (
-    <section id="product-grid" className="py-20 px-6 max-w-[1920px] mx-auto relative overflow-hidden min-h-screen bg-white">
+    <section id="product-grid" className="py-20 px-4 sm:px-6 max-w-[1920px] mx-auto relative overflow-hidden min-h-screen bg-white">
       <div className="absolute top-20 right-0 w-64 h-64 bg-violet-100 rounded-full blur-3xl -z-10 opacity-40"></div>
 
       <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
