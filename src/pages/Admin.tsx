@@ -269,8 +269,6 @@ export const Admin = () => {
           product={editing}
           onSave={handleSaveProduct}
           onClose={() => setEditing(null)}
-          apiUrl={API_URL}
-          authToken={auth?.token}
         />
         )}
       </AnimatePresence>
@@ -421,15 +419,14 @@ function AdminSections({
   );
 }
 
-function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
+function ProductEditModal({ product, onSave, onClose }: {
   product: Product; onSave: (p: Product) => void; onClose: () => void;
-  apiUrl: string; authToken?: string;
 }) {
   const [form, setForm] = useState(product);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [imgError, setImgError] = useState('');
 
-  const resizeImage = (file: File, maxW = 600, maxH = 600, quality = 0.75): Promise<string> => {
+  const resizeAndEncode = (file: File, maxW = 400, maxH = 400, quality = 0.65): Promise<string> => {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -447,58 +444,29 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
         const ctx = canvas.getContext('2d');
         if (!ctx) { reject(new Error('Canvas')); return; }
         ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl);
+        resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.onerror = () => {
         URL.revokeObjectURL(url);
-        reject(new Error('Invalid image'));
+        reject(new Error('Невірне зображення'));
       };
       img.src = url;
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
-    if (!apiUrl || !authToken) {
-      setUploadError('API не налаштований');
-      return;
-    }
-    setUploadError('');
-    setUploading(true);
+    e.target.value = '';
+    setImgError('');
+    setLoading(true);
     try {
-      const base64 = await resizeImage(file);
-      // form-urlencoded — без preflight CORS (без custom headers)
-      const body = new URLSearchParams();
-      body.set('token', authToken || '');
-      body.set('base64', base64);
-      body.set('productId', String(product.id));
-      body.set('ext', 'jpg');
-      const res = await fetch(`${apiUrl}/admin/upload-image`, {
-        method: 'POST',
-        body: body.toString(),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      });
-      const text = await res.text();
-      let data: { ok?: boolean; url?: string; error?: string } = {};
-      try {
-        data = JSON.parse(text);
-      } catch {
-        setUploadError(text?.slice(0, 150) || `HTTP ${res.status}`);
-        return;
-      }
-      if (data.ok && data.url) {
-        setForm(p => ({ ...p, image: data.url }));
-      } else {
-        setUploadError(data.error || `Помилка ${res.status}`);
-      }
+      const dataUrl = await resizeAndEncode(file);
+      setForm(p => ({ ...p, image: dataUrl }));
     } catch (err) {
-      const msg = (err as Error).message || 'Помилка завантаження';
-      setUploadError(msg.includes('fetch') || msg.includes('Failed') ? `${msg}` : msg);
+      setImgError((err as Error).message || 'Помилка');
     } finally {
-      setUploading(false);
-      e.target.value = '';
+      setLoading(false);
     }
   };
 
@@ -538,12 +506,13 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
               ) : (
                 <div className="w-24 h-24 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-2 border-dashed border-gray-200">Фото</div>
               )}
-              <label className={`mt-2 block ${!apiUrl ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading || !apiUrl} />
+              <label className="mt-2 block">
+                <input type="file" accept="image/*" className="hidden" onChange={handleImagePick} disabled={loading} />
                 <span className="inline-block px-3 py-1.5 bg-violet-100 text-violet-700 hover:bg-violet-200 rounded-lg text-xs font-medium cursor-pointer transition-colors">
-                  {uploading ? '…' : 'Завантажити'}
+                  {loading ? '…' : 'Обрати фото'}
                 </span>
               </label>
+              <p className="mt-1 text-[10px] text-gray-400">Фото зберігається разом з товаром</p>
             </div>
             <div className="flex-1 min-w-0 space-y-4">
               <div>
@@ -589,7 +558,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
               </div>
             </div>
           </div>
-          {uploadError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{uploadError}</p>}
+          {imgError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{imgError}</p>}
         </div>
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
           <button
