@@ -72,7 +72,12 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
     }
     setLoading(true);
     const phone = formatPhoneForSubmit(form.phone);
-    const items = cart.map(({ product, qty }) => `• ${escapeHtml(product.name)} (${product.category}) × ${qty} — ${product.price}`);
+    const items = cart.map(({ product, qty }, i) => {
+      const priceNum = parseInt(product.price.replace(/\s/g, '').replace('₴', ''), 10) || 0;
+      const subtotal = priceNum * qty;
+      const tagPart = product.tag ? ` / ${escapeHtml(product.tag)}` : '';
+      return `${i + 1}. ID:${product.id} | ${escapeHtml(product.name)} | ${product.category}${tagPart} | ${qty} шт. × ${product.price} = ${subtotal.toLocaleString('uk-UA')} ₴`;
+    });
     const lines = [
       '🛒 <b>Нове замовлення</b>',
       '',
