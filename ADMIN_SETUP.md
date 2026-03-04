@@ -63,31 +63,17 @@
 | ADMIN_TOKEN   | Придумайте самі             | Пароль для входу в адмінку |
 | GITHUB_TOKEN  | GitHub → Settings → Tokens  | Коміт змін у репозиторій |
 | GITHUB_REPO   | (опційно)                   | `katering-VKK/katering-VKK.github.io` |
-| IMGBB_API_KEY | api.imgbb.com (безкоштовно) | Альтернатива для завантаження фото     |
 
 ---
 
 ## Завантаження фото
 
-Потрібен **GITHUB_TOKEN** або **IMGBB_API_KEY** (хоча б один).
-
-### 1. GitHub (GITHUB_TOKEN)
-Фото зберігаються в `public/images/products/{id}.jpg` через GitHub API.
+Потрібен **GITHUB_TOKEN** — фото зберігаються в `public/images/products/{id}.jpg` через GitHub API.
 
 - Токен має бути **classic** (`ghp_`), scope **repo**
 - Папка `public/images/products/` має існувати (додано `.gitkeep`)
-
-### 2. ImgBB (рекомендовано, якщо GitHub не працює)
-Безкоштовно, стабільніше для фото.
-
-1. Зареєструйтесь на https://api.imgbb.com/
-2. Отримайте API key
-3. Vercel → lumu-api → Environment Variables → **IMGBB_API_KEY**
-4. Redeploy
-
-Якщо IMGBB_API_KEY задано, фото зберігаються на imgbb замість GitHub.
-
-**Якщо при вході показує попередження про фото** — додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel і зробіть Redeploy.
+- Vercel → lumu-api → Environment Variables → **GITHUB_TOKEN**
+- Redeploy після змін
 
 ---
 

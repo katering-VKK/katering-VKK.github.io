@@ -28,8 +28,6 @@ export default async function handler(req, res) {
 
   const adminToken = process.env.ADMIN_TOKEN;
   const ghToken = process.env.GITHUB_TOKEN;
-  const imgbbKey = process.env.IMGBB_API_KEY;
-  const hasUpload = imgbbKey || ghToken;
 
   const send = (status, data) => {
     if (formatHtml) {
@@ -39,11 +37,8 @@ export default async function handler(req, res) {
     return res.status(status).json(data);
   };
 
-  if (!adminToken) {
-    return send(500, { ok: false, error: 'ADMIN_TOKEN missing' });
-  }
-  if (!hasUpload) {
-    return send(500, { ok: false, error: 'Додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel' });
+  if (!adminToken || !ghToken) {
+    return send(500, { ok: false, error: 'ADMIN_TOKEN або GITHUB_TOKEN не налаштовані у Vercel' });
   }
 
   let token = null;
@@ -96,26 +91,6 @@ export default async function handler(req, res) {
 
   if (content.length > 2 * 1024 * 1024) {
     return send(400, { ok: false, error: 'Image too large (max 2MB)' });
-  }
-
-  if (imgbbKey) {
-    try {
-      const fd = new URLSearchParams();
-      fd.set('key', imgbbKey);
-      fd.set('image', rawBase64);
-      const ir = await fetch('https://api.imgbb.com/1/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: fd.toString(),
-      });
-      const idata = await ir.json();
-      if (idata?.data?.url) {
-        return send(200, { ok: true, url: idata.data.url });
-      }
-      return send(502, { ok: false, error: idata?.error?.message || 'ImgBB failed' });
-    } catch (e) {
-      return send(502, { ok: false, error: (e && e.message) || 'ImgBB error' });
-    }
   }
 
   try {

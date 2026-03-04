@@ -64,7 +64,7 @@ export const Admin = () => {
       const healthRes = await fetch(`${API_URL}/admin/health`, { cache: 'no-store' });
       const health = await healthRes.json().catch(() => ({}));
       if (!health.uploadOk) {
-        setUploadTest({ status: 'fail', msg: 'API: IMGBB/GITHUB_TOKEN не в проєкті lumu-api' });
+        setUploadTest({ status: 'fail', msg: 'API: GITHUB_TOKEN не в проєкті lumu-api' });
         return;
       }
       const res = await fetch(`${API_URL}/admin/upload-image`, {
@@ -332,7 +332,7 @@ export const Admin = () => {
           )}
           {apiStatus === 'ok' && !uploadOk && (
             <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              Фото не завантажуватимуться: додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel. <a href="https://api.imgbb.com/" target="_blank" rel="noreferrer" className="underline">ImgBB</a> — безкоштовно за 30 сек.
+              Фото не завантажуватимуться: додайте GITHUB_TOKEN у Vercel → lumu-api → Environment Variables
             </p>
           )}
           <p className="mt-4 text-xs text-gray-400 text-center">
@@ -388,7 +388,7 @@ export const Admin = () => {
             {uploadTest.status === 'ok' && uploadTest.msg}
             {uploadTest.status === 'fail' && (
               <span>
-                Тест: {uploadTest.msg}. Перевірте: 1) Env vars у проєкті <strong>lumu-api</strong> (не головному), 2) Redeploy lumu-api після змін, 3) Режим інкогніто (блокувальники). <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">Відкрити API</a>
+                Тест: {uploadTest.msg}. Перевірте GITHUB_TOKEN у проєкті lumu-api, Redeploy. <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">Відкрити API</a>
               </span>
             )}
             {uploadTest.status !== 'testing' && (
