@@ -514,8 +514,9 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
     e.target.value = '';
     setImgError('');
     setLoading(true);
+    let dataUrl: string;
     try {
-      const dataUrl = await resizeAndEncode(file);
+      dataUrl = await resizeAndEncode(file);
       const rawBase64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
       if (apiUrl && authToken) {
         const res = await fetch(`${apiUrl}/admin/upload-image`, {
@@ -534,13 +535,20 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
         if (data.ok && data.url) {
           setForm(p => ({ ...p, image: data.url }));
         } else {
-          setImgError(data.error || 'Невдалося завантажити фото');
+          setForm(p => ({ ...p, image: dataUrl }));
+          setImgError(data.error || 'Фото збережено — натисніть «Зберегти в GitHub»');
         }
       } else {
         setForm(p => ({ ...p, image: dataUrl }));
       }
     } catch (err) {
-      setImgError((err as Error).message || 'Помилка');
+      try {
+        dataUrl = await resizeAndEncode(file);
+        setForm(p => ({ ...p, image: dataUrl }));
+        setImgError('Фото збережено — натисніть «Зберегти в GitHub»');
+      } catch {
+        setImgError((err as Error).message || 'Помилка');
+      }
     } finally {
       setLoading(false);
     }
