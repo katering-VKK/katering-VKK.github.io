@@ -69,23 +69,25 @@
 
 ## Завантаження фото
 
-Є два варіанти:
+Потрібен **GITHUB_TOKEN** або **IMGBB_API_KEY** (хоча б один).
 
-### 1. GitHub (за замовчуванням)
+### 1. GitHub (GITHUB_TOKEN)
 Фото зберігаються в `public/images/products/{id}.jpg` через GitHub API.
 
-### 2. ImgBB (якщо GitHub не працює)
-Додайте в Vercel → lumu-api → Environment Variables:
-- **IMGBB_API_KEY** — безкоштовний ключ з https://api.imgbb.com/ (реєстрація → API key)
+- Токен має бути **classic** (`ghp_`), scope **repo**
+- Папка `public/images/products/` має існувати (додано `.gitkeep`)
+
+### 2. ImgBB (рекомендовано, якщо GitHub не працює)
+Безкоштовно, стабільніше для фото.
+
+1. Зареєструйтесь на https://api.imgbb.com/
+2. Отримайте API key
+3. Vercel → lumu-api → Environment Variables → **IMGBB_API_KEY**
+4. Redeploy
 
 Якщо IMGBB_API_KEY задано, фото зберігаються на imgbb замість GitHub.
 
-**Що перевірити, якщо завантаження не працює:**
-
-1. **GITHUB_TOKEN** — має бути **classic** (`ghp_`), з scope **repo**.
-2. **Папка існує** — у репо має бути `public/images/products/` (з `.gitkeep`).
-3. **Redeploy lumu-api** — після змін у Vercel env обовʼязково Redeploy.
-4. **Альтернатива** — додайте IMGBB_API_KEY для завантаження через imgbb.
+**Якщо при вході показує попередження про фото** — додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel і зробіть Redeploy.
 
 ---
 

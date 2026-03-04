@@ -48,6 +48,7 @@ export const Admin = () => {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'no-token' | 'error'>('checking');
+  const [uploadOk, setUploadOk] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -66,7 +67,10 @@ export const Admin = () => {
     if (!API_URL) return;
     fetch(`${API_URL}/admin/health`)
       .then(r => r.json())
-      .then(d => setApiStatus(d.configured ? 'ok' : 'no-token'))
+      .then(d => {
+        setApiStatus(d.configured ? 'ok' : 'no-token');
+        setUploadOk(!!d.uploadOk);
+      })
       .catch(() => setApiStatus('error'));
   }, [API_URL]);
 
@@ -145,7 +149,7 @@ export const Admin = () => {
         const img = payload[i].image;
         if (img && img.startsWith('data:image/')) {
           const rawBase64 = img.replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
-          if (rawBase64.length > 500_000) {
+          if (rawBase64.length > 1_500_000) {
             payload[i] = { ...payload[i], image: undefined };
             failedUploadIds.add(payload[i].id);
             strippedCount++;
@@ -167,11 +171,14 @@ export const Admin = () => {
               payload[i] = { ...payload[i], image: undefined };
               failedUploadIds.add(payload[i].id);
               strippedCount++;
+              const errMsg = upData.error || `HTTP ${upRes.status}`;
+              setSaveError(prev => (prev ? prev + '; ' : '') + `Товар #${payload[i].id}: ${errMsg}`);
             }
-          } catch {
+          } catch (err) {
             payload[i] = { ...payload[i], image: undefined };
             failedUploadIds.add(payload[i].id);
             strippedCount++;
+            setSaveError(prev => (prev ? prev + '; ' : '') + `Товар #${payload[i].id}: ${(err as Error).message || 'Помилка мережі'}`);
           }
         }
       }
@@ -210,9 +217,9 @@ export const Admin = () => {
         });
         setLocalProducts(merged);
         skipSyncRef.current = true;
-        setSaveError('');
+        if (strippedCount === 0) setSaveError('');
         await refetch();
-        showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото залишилось у формі — спробуйте ще раз` : 'Збережено в GitHub');
+        showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото не завантажилось — перевірте помилку вище` : 'Збережено в GitHub');
       } else {
         setSaveError(data.error || `Помилка ${res.status}`);
       }
@@ -274,6 +281,11 @@ export const Admin = () => {
           {apiStatus === 'error' && (
             <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
               API недоступний. Перевірте VITE_TELEGRAM_API_URL = https://lumu-api.vercel.app/api
+            </p>
+          )}
+          {apiStatus === 'ok' && !uploadOk && (
+            <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+              Фото не завантажуватимуться: додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel → lumu-api → Settings → Environment Variables
             </p>
           )}
           <p className="mt-4 text-xs text-gray-400 text-center">
@@ -575,7 +587,8 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
           setForm(p => ({ ...p, image: data.url }));
         } else {
           setForm(p => ({ ...p, image: dataUrl }));
-          setImgError(data.error || 'Фото збережено — натисніть «Зберегти в GitHub»');
+          const errMsg = data.error || `HTTP ${res.status}`;
+          setImgError(`Завантаження не вдалося: ${errMsg}. Фото збережено локально — натисніть «Зберегти в GitHub» для повторної спроби.`);
         }
       } else {
         setForm(p => ({ ...p, image: dataUrl }));
