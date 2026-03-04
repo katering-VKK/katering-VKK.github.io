@@ -20,9 +20,14 @@ export default async function handler(req, res) {
 
   const adminToken = process.env.ADMIN_TOKEN;
   const ghToken = process.env.GITHUB_TOKEN;
+  const imgbbKey = process.env.IMGBB_API_KEY;
+  const hasUpload = imgbbKey || ghToken;
 
-  if (!adminToken || !ghToken) {
-    return res.status(500).json({ ok: false, error: 'Not configured' });
+  if (!adminToken) {
+    return res.status(500).json({ ok: false, error: 'ADMIN_TOKEN missing' });
+  }
+  if (!hasUpload) {
+    return res.status(500).json({ ok: false, error: 'Додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel' });
   }
 
   let token = null;
@@ -77,7 +82,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Image too large (max 2MB)' });
   }
 
-  const imgbbKey = process.env.IMGBB_API_KEY;
   if (imgbbKey) {
     try {
       const fd = new URLSearchParams();

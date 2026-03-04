@@ -52,8 +52,30 @@ export const Admin = () => {
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [uploadTest, setUploadTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; msg?: string }>({ status: 'idle' });
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const skipSyncRef = useRef(false);
+
+  const testUpload = async () => {
+    if (!auth?.token || !API_URL) return;
+    setUploadTest({ status: 'testing' });
+    const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    try {
+      const res = await fetch(`${API_URL}/admin/upload-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
+        body: JSON.stringify({ base64: pixel, productId: 99999, ext: 'jpg' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok && data.url) {
+        setUploadTest({ status: 'ok', msg: 'Фото працює' });
+      } else {
+        setUploadTest({ status: 'fail', msg: data.error || `HTTP ${res.status}` });
+      }
+    } catch (e) {
+      setUploadTest({ status: 'fail', msg: (e as Error).message });
+    }
+  };
 
   useEffect(() => {
     if (skipSyncRef.current) {
@@ -285,7 +307,7 @@ export const Admin = () => {
           )}
           {apiStatus === 'ok' && !uploadOk && (
             <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              Фото не завантажуватимуться: додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel → lumu-api → Settings → Environment Variables
+              Фото не завантажуватимуться: додайте GITHUB_TOKEN або IMGBB_API_KEY у Vercel. <a href="https://api.imgbb.com/" target="_blank" rel="noreferrer" className="underline">ImgBB</a> — безкоштовно за 30 сек.
             </p>
           )}
           <p className="mt-4 text-xs text-gray-400 text-center">
@@ -335,6 +357,25 @@ export const Admin = () => {
             </button>
           </div>
         )}
+        {uploadTest.status !== 'idle' && (
+          <div className={`mb-6 p-4 rounded-xl text-sm ${uploadTest.status === 'ok' ? 'bg-green-50 text-green-700' : uploadTest.status === 'fail' ? 'bg-amber-50 text-amber-800' : 'bg-gray-50 text-gray-600'}`}>
+            {uploadTest.status === 'testing' && 'Тест завантаження...'}
+            {uploadTest.status === 'ok' && uploadTest.msg}
+            {uploadTest.status === 'fail' && (
+              <span>
+                Тест: {uploadTest.msg}. Додайте IMGBB_API_KEY у Vercel — <a href="https://api.imgbb.com/" target="_blank" rel="noreferrer" className="underline">безкоштовно</a>.
+              </span>
+            )}
+            {uploadTest.status !== 'testing' && (
+              <button onClick={() => setUploadTest({ status: 'idle' })} className="ml-2 text-xs underline">Закрити</button>
+            )}
+          </div>
+        )}
+        <div className="mb-6 flex gap-2">
+          <button onClick={testUpload} disabled={uploadTest.status === 'testing'} className="text-sm text-gray-500 hover:text-black underline disabled:opacity-50">
+            Тест завантаження фото
+          </button>
+        </div>
 
         {loading ? (
           <div className="py-20 text-center text-gray-400">Завантаження...</div>
