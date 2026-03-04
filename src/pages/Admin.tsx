@@ -121,7 +121,7 @@ export const Admin = () => {
 
   const handleDeleteProduct = (id: number, name?: string) => {
     const label = name ? `«${name.length > 40 ? name.slice(0, 40) + '…' : name}»` : 'цей товар';
-    if (confirm(`Видалити ${label}?`)) {
+    if (confirm(`Видалити товар ${label}? Цю дію не можна скасувати.`)) {
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
@@ -139,6 +139,7 @@ export const Admin = () => {
         tag: String(p.tag || '').trim(),
         ...(p.image && { image: String(p.image) }),
       }));
+      const failedUploadIds = new Set<number>();
       let strippedCount = 0;
       for (let i = 0; i < payload.length; i++) {
         const img = payload[i].image;
@@ -146,6 +147,7 @@ export const Admin = () => {
           const rawBase64 = img.replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
           if (rawBase64.length > 500_000) {
             payload[i] = { ...payload[i], image: undefined };
+            failedUploadIds.add(payload[i].id);
             strippedCount++;
             continue;
           }
@@ -163,10 +165,12 @@ export const Admin = () => {
               payload[i] = { ...payload[i], image: upData.url };
             } else {
               payload[i] = { ...payload[i], image: undefined };
+              failedUploadIds.add(payload[i].id);
               strippedCount++;
             }
           } catch {
             payload[i] = { ...payload[i], image: undefined };
+            failedUploadIds.add(payload[i].id);
             strippedCount++;
           }
         }
@@ -197,11 +201,18 @@ export const Admin = () => {
         return;
       }
       if (data.ok) {
-        setLocalProducts(payload);
+        const merged = payload.map(p => {
+          if (failedUploadIds.has(p.id)) {
+            const orig = localProducts.find(op => op.id === p.id);
+            return { ...p, image: orig?.image ?? p.image };
+          }
+          return p;
+        });
+        setLocalProducts(merged);
         skipSyncRef.current = true;
         setSaveError('');
         await refetch();
-        showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото пропущено (завантажте окремо)` : 'Збережено в GitHub');
+        showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото залишилось у формі — спробуйте ще раз` : 'Збережено в GitHub');
       } else {
         setSaveError(data.error || `Помилка ${res.status}`);
       }
@@ -366,6 +377,9 @@ function AdminSections({
       if (map[p.category]) map[p.category].push(p);
       else (map['Інше'] = map['Інше'] ?? []).push(p);
     }
+    for (const c of Object.keys(map)) {
+      map[c] = [...map[c]].sort((a, b) => a.id - b.id);
+    }
     return map;
   }, [localProducts]);
 
@@ -486,11 +500,17 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState('');
   const [validationError, setValidationError] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm(product);
     setImgError('');
     setValidationError('');
+  }, [product.id]);
+
+  useEffect(() => {
+    const t = setTimeout(() => nameInputRef.current?.focus(), 50);
+    return () => clearTimeout(t);
   }, [product.id]);
 
   useEffect(() => {
@@ -602,6 +622,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96 }}
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); handleSave(); } }}
         className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
       >
         <div className="bg-gradient-to-br from-violet-50 to-white px-6 py-5 border-b border-gray-100">
@@ -643,6 +664,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Назва</label>
                 <input
+                  ref={nameInputRef}
                   value={form.name}
                   onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
@@ -690,7 +712,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
           )}
           {validationError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{validationError}</p>}
         </div>
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
           <button
             onClick={handleSave}
             className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-xl font-semibold transition-colors"
