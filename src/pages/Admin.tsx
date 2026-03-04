@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -52,8 +52,13 @@ export const Admin = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  const skipSyncRef = useRef(false);
 
   useEffect(() => {
+    if (skipSyncRef.current) {
+      skipSyncRef.current = false;
+      return;
+    }
     setLocalProducts(products);
   }, [products]);
 
@@ -191,8 +196,9 @@ export const Admin = () => {
         return;
       }
       if (data.ok) {
-        await refetch();
         setLocalProducts(payload);
+        skipSyncRef.current = true;
+        await refetch();
         showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото пропущено (завантажте окремо)` : 'Збережено в GitHub');
       } else {
         setSaveError(data.error || `Помилка ${res.status}`);
