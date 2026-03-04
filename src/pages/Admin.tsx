@@ -22,16 +22,16 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 
 const ADMIN_KEY = 'lumu_admin';
 const DEFAULT_API = 'https://lumu-api.vercel.app/api';
-const API_URL = (() => {
+const getApiUrl = () => {
   const env = (import.meta.env.VITE_TELEGRAM_API_URL || '').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
   if (env) return env;
   if (typeof window !== 'undefined') {
     const o = window.location.origin;
-    if (o.includes('github.io') || o.includes('lumu.com.ua') || o.includes('localhost') || o.includes('127.0.0.1')) return DEFAULT_API;
     return o + '/api';
   }
   return DEFAULT_API;
-})();
+};
+const API_URL = getApiUrl();
 
 export const Admin = () => {
   const { products, loading, refetch } = useProducts();
