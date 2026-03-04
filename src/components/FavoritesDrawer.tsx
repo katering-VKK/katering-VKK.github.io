@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import { getProductGradient } from '../data/products';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 export const FavoritesDrawer = () => {
   const { favorites, isFavOpen, setFavOpen, toggleFavorite, addToCart } = useStore();
@@ -69,7 +70,7 @@ export const FavoritesDrawer = () => {
                     >
                       <div className="w-20 h-20 rounded-xl shrink-0 overflow-hidden">
                         {product.image ? (
-                          <img src={product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
                             <span className="text-white/40 text-2xl font-black select-none">{product.name.charAt(0)}</span>

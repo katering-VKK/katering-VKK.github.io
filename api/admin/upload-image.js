@@ -149,8 +149,9 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: msg });
     }
 
-    const imageUrl = `/images/products/${productId}.${safeExt}`;
-    return res.status(200).json({ ok: true, url: imageUrl });
+    const branch = process.env.GITHUB_BRANCH || 'main';
+    const rawUrl = `https://raw.githubusercontent.com/${repo}/${branch}/${filePath}`;
+    return res.status(200).json({ ok: true, url: rawUrl });
   } catch (err) {
     return res.status(502).json({ ok: false, error: (err && err.message) || 'Failed' });
   }

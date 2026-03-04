@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 export const ProductQuickView = () => {
   const { products } = useProducts();
@@ -65,7 +66,7 @@ export const ProductQuickView = () => {
           <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden shrink-0">
             <div className="w-full h-[min(40vw,180px)] sm:h-auto sm:w-[45%] sm:aspect-square sm:min-h-0 flex items-center justify-center shrink-0 overflow-hidden rounded-t-2xl sm:rounded-none">
               {product.image ? (
-                <img src={product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
                   <span className="text-white/30 text-8xl font-black select-none">{product.name.charAt(0)}</span>
@@ -148,7 +149,7 @@ export const ProductQuickView = () => {
                   >
                     <div className="w-full aspect-square rounded-xl overflow-hidden transition-transform group-hover:scale-105 group-active:scale-95">
                       {p.image ? (
-                        <img src={p.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        <img src={resolveImageUrl(p.image) || p.image} alt="" className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(p.id, p.category) }}>
                           <span className="text-white/30 text-2xl font-black">{p.name.charAt(0)}</span>

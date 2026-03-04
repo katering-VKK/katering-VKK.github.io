@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useProducts } from '../context/ProductsContext';
 import { categories, getProductGradient, parsePrice } from '../data/products';
 import { useStore } from '../store';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 const ITEMS_PER_PAGE = 12;
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
@@ -170,7 +171,7 @@ export const ProductGrid = () => {
                 )}
                 <div className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center relative overflow-hidden">
                   {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+                    <img src={resolveImageUrl(product.image) || product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <>
                       <div className="absolute inset-0" style={{ background: getProductGradient(product.id, product.category) }} />

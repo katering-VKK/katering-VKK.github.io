@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import { getProductGradient } from '../data/products';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 export const SearchOverlay = () => {
   const { products } = useProducts();
@@ -120,7 +121,7 @@ export const SearchOverlay = () => {
                         >
                           <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden">
                             {product.image ? (
-                              <img src={product.image} alt="" className="w-full h-full object-cover" />
+                              <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
                                 <span className="text-white/40 text-xl font-black select-none">{product.name.charAt(0)}</span>
