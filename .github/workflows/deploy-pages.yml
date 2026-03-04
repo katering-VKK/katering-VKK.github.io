@@ -32,7 +32,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          VITE_ADMIN_API_URL: ${{ secrets.VITE_ADMIN_API_URL }}
           VITE_TELEGRAM_API_URL: ${{ secrets.VITE_TELEGRAM_API_URL }}
+        
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
