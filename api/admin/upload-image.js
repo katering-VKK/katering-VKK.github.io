@@ -1,9 +1,8 @@
 function allowOrigin(origin) {
   if (!origin) return '*';
   try {
-    const h = new URL(origin).hostname;
-    if (h === 'localhost' || h === '127.0.0.1') return origin;
-    if (h.endsWith('github.io') || h.endsWith('vercel.app') || h.endsWith('lumu.com.ua')) return origin;
+    new URL(origin);
+    return origin;
   } catch {}
   return '*';
 }
