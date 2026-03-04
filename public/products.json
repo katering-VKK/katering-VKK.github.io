@@ -14,5 +14,21 @@
     "category": "Книги",
     "tag": "",
     "image": "/images/products/2.jpg"
+  },
+  {
+    "id": 3,
+    "name": "Новий товар",
+    "price": "100 ₴",
+    "category": "Іграшки",
+    "tag": "",
+    "image": "/images/products/3.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Новий товар",
+    "price": "100 ₴",
+    "category": "Власне виробництво",
+    "tag": "",
+    "image": "/images/products/4.jpg"
   }
 ]
