@@ -181,6 +181,7 @@ export const Admin = () => {
       price: String(p.price || '').trim(),
       category: String(p.category || 'Книги'),
       tag: String(p.tag || '').trim(),
+      ...(p.description && { description: String(p.description).trim() }),
       ...(p.image && { image: String(p.image) }),
     }));
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -224,6 +225,7 @@ export const Admin = () => {
             price,
             category: String(p.category ?? defaultCategory).trim() || defaultCategory,
             tag: String(p.tag ?? '').trim(),
+            ...(p.description && typeof p.description === 'string' && { description: String(p.description).trim() }),
             ...(p.image && typeof p.image === 'string' && !p.image.startsWith('data:') && { image: p.image }),
           });
         }
@@ -253,6 +255,7 @@ export const Admin = () => {
         price: String(p.price || '').trim(),
         category: String(p.category || 'Книги'),
         tag: String(p.tag || '').trim(),
+        ...(p.description && { description: String(p.description).trim() }),
         ...(p.image && { image: String(p.image) }),
       }));
       const failedUploadIds = new Set<number>();
@@ -443,8 +446,8 @@ export const Admin = () => {
   const productsList = Array.isArray(products) ? products : [];
   const totalProducts = localProducts.length;
   const hasUnsaved = useMemo(() => {
-    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, image: p.image })));
-    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, image: p.image })));
+    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, description: p.description, image: p.image })));
+    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, description: p.description, image: p.image })));
     return orig !== curr;
   }, [productsList, localProducts]);
 
@@ -1137,6 +1140,18 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
                     ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Опис</label>
+                <textarea
+                  value={form.description ?? ''}
+                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  rows={3}
+                  maxLength={300}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-y min-h-[80px]"
+                  placeholder="Короткий опис товару (до 300 символів)"
+                />
+                <p className="text-[10px] text-gray-400 mt-0.5">{(form.description ?? '').length}/300</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Тег</label>

@@ -3,10 +3,12 @@ import { Search, X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
+import { useSiteContent } from '../context/SiteContentContext';
 import { ProductImage } from './ProductImage';
 
 export const SearchOverlay = () => {
   const { products } = useProducts();
+  const { content } = useSiteContent();
   const { isSearchOpen, setSearchOpen, addToCart, navigateToCategory } = useStore();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -87,16 +89,20 @@ export const SearchOverlay = () => {
                   <div className="p-6">
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Категорії</p>
                     <div className="flex flex-wrap gap-2">
-                      {quickCategories.map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => { navigateToCategory(cat); setSearchOpen(false); }}
-                          className="px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-full text-sm font-medium text-gray-700 transition-colors flex items-center gap-2 group"
-                        >
-                          {cat}
-                          <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                      ))}
+                      {quickCategories.map(cat => {
+                        const desc = cat === 'Іграшки' ? content.categories?.toys?.trim() : cat === 'Власне виробництво' ? content.categories?.ownProduction?.trim() : null;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => { navigateToCategory(cat); setSearchOpen(false); }}
+                            title={desc ?? undefined}
+                            className="px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-full text-sm font-medium text-gray-700 transition-colors flex items-center gap-2 group"
+                          >
+                            {cat}
+                            <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </button>
+                        );
+                      })}
                     </div>
                     <p className="text-xs text-gray-300 mt-6 text-center">Введіть щонайменше 2 символи для пошуку</p>
                   </div>

@@ -2,9 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Youtube, MapPin, Clock, Rocket, Phone, Mail, Heart, Send, ArrowUpRight, Sparkles, Settings } from 'lucide-react';
 import { useStore } from '../store';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export const Footer = () => {
   const { navigateToCategory } = useStore();
+  const { content } = useSiteContent();
 
   return (
     <footer className="relative overflow-hidden">
@@ -72,15 +74,19 @@ export const Footer = () => {
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              {['Книги', 'Іграшки', 'Творчість', 'Настільні ігри', 'Власне виробництво'].map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => navigateToCategory(cat)}
-                  className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider text-gray-300 hover:text-white transition-all border border-white/5 hover:border-white/10"
-                >
-                  {cat}
-                </button>
-              ))}
+              {['Книги', 'Іграшки', 'Творчість', 'Настільні ігри', 'Власне виробництво'].map(cat => {
+                const desc = cat === 'Іграшки' ? content.categories?.toys?.trim() : cat === 'Власне виробництво' ? content.categories?.ownProduction?.trim() : null;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => navigateToCategory(cat)}
+                    title={desc ?? undefined}
+                    className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-full text-xs font-bold uppercase tracking-wider text-gray-300 hover:text-white transition-all border border-white/5 hover:border-white/10"
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -93,16 +99,17 @@ export const Footer = () => {
               <h4 className="text-xs uppercase text-purple-400 tracking-[0.2em] font-bold">Магазин</h4>
               <nav className="flex flex-col gap-3">
                 {[
-                  { label: 'Книги', cat: 'Книги' },
-                  { label: 'Іграшки', cat: 'Іграшки' },
-                  { label: 'Власне виробництво', cat: 'Власне виробництво' },
-                  { label: 'Творчість', cat: 'Творчість' },
-                  { label: 'Настільні ігри', cat: 'Настільні ігри' },
-                  { label: 'Хіт продажу', cat: 'Хіт продажу' },
+                  { label: 'Книги', cat: 'Книги', title: '' },
+                  { label: 'Іграшки', cat: 'Іграшки', title: content.categories?.toys?.trim() ?? '' },
+                  { label: 'Власне виробництво', cat: 'Власне виробництво', title: content.categories?.ownProduction?.trim() ?? '' },
+                  { label: 'Творчість', cat: 'Творчість', title: '' },
+                  { label: 'Настільні ігри', cat: 'Настільні ігри', title: '' },
+                  { label: 'Хіт продажу', cat: 'Хіт продажу', title: '' },
                 ].map(item => (
                   <button
                     key={item.label}
                     onClick={() => navigateToCategory(item.cat)}
+                    title={item.title || undefined}
                     className="text-gray-400 hover:text-white transition-colors text-sm text-left group flex items-center gap-1.5"
                   >
                     {item.label}

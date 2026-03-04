@@ -4,6 +4,7 @@ export interface Product {
   price: string;
   category: string;
   tag: string;
+  description?: string;
   image?: string;
 }
 

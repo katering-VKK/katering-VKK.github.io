@@ -211,7 +211,8 @@ export const ProductGrid = () => {
               </div>
               <div className="px-1 py-2">
                 <p className="text-xs font-medium text-violet-500 uppercase tracking-wider mb-1.5">{product.category}</p>
-                <h3 className="text-sm font-bold mb-2 group-hover:text-violet-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
+                <h3 className="text-sm font-bold mb-1 group-hover:text-violet-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
+                {product.description && <p className="text-xs text-gray-500 line-clamp-2 mb-1">{product.description}</p>}
                 <div className="flex items-center justify-between">
                   <p className="text-base font-bold text-gray-900">{product.price}</p>
                   {isInCart(product.id) && (

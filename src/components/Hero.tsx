@@ -69,7 +69,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-          className="flex flex-col sm:flex-row gap-6 mb-16"
+          className="flex flex-col sm:flex-row gap-6 mb-16 items-center"
         >
           <button
             onClick={() => navigateToCategory('Книги')}
@@ -77,12 +77,19 @@ export const Hero = () => {
           >
             <span className="relative z-10">Книги</span>
           </button>
-          <button
-            onClick={() => navigateToCategory('Іграшки')}
-            className="group relative overflow-hidden bg-white/10 border-2 border-white/80 text-white px-12 py-4 rounded-full font-bold text-sm transition-all duration-300 hover:bg-white/20 hover:border-white hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-[0.98] min-w-[180px] uppercase tracking-widest backdrop-blur-md"
-          >
-            <span className="relative z-10">Іграшки</span>
-          </button>
+          <div className="flex flex-col items-center gap-1">
+            <button
+              onClick={() => navigateToCategory('Іграшки')}
+              className="group relative overflow-hidden bg-white/10 border-2 border-white/80 text-white px-12 py-4 rounded-full font-bold text-sm transition-all duration-300 hover:bg-white/20 hover:border-white hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-[0.98] min-w-[180px] uppercase tracking-widest backdrop-blur-md"
+            >
+              <span className="relative z-10">Іграшки</span>
+            </button>
+            {content.categories?.toys?.trim() && (
+              <span className="text-white/70 text-xs max-w-[220px] text-center leading-tight">
+                {content.categories.toys.length > 80 ? content.categories.toys.slice(0, 77) + '…' : content.categories.toys}
+              </span>
+            )}
+          </div>
         </motion.div>
 
         <motion.div 
