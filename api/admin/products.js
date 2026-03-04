@@ -14,23 +14,24 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
 
-  const auth = req.headers.authorization;
-  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
-  const adminToken = process.env.ADMIN_TOKEN;
-  const ghToken = process.env.GITHUB_TOKEN;
-
-  if (!adminToken || !ghToken) {
-    return res.status(500).json({ error: 'Admin or GitHub not configured' });
-  }
-  if (token !== adminToken) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   } catch {
     return res.status(400).json({ error: 'Invalid JSON' });
+  }
+
+  let token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
+  if (!token && body && body.token) token = body.token;
+  const tokenTrim = (token || '').toString().trim();
+  const adminTrim = (process.env.ADMIN_TOKEN || '').toString().trim();
+  const ghToken = process.env.GITHUB_TOKEN;
+
+  if (!adminTrim || !ghToken) {
+    return res.status(500).json({ error: 'Admin or GitHub not configured' });
+  }
+  if (tokenTrim !== adminTrim) {
+    return res.status(401).json({ error: 'Unauthorized. Вийдіть і увійдіть знову.' });
   }
 
   const products = body?.products;

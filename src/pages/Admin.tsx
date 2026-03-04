@@ -21,10 +21,12 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ADMIN_KEY = 'lumu_admin';
-const DEFAULT_API = 'https://lumu-api.vercel.app/api';
+const DEFAULT_API = 'https://lumu-pearl.vercel.app/api';
 const getApiUrl = () => {
-  const env = (import.meta.env.VITE_TELEGRAM_API_URL || '').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
-  if (env) return env;
+  const admin = (import.meta.env.VITE_ADMIN_API_URL || '').replace(/\/$/, '');
+  if (admin) return admin;
+  const telegram = (import.meta.env.VITE_TELEGRAM_API_URL || '').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
+  if (telegram) return telegram;
   if (typeof window !== 'undefined') {
     const o = window.location.origin;
     return o + '/api';
@@ -60,17 +62,12 @@ export const Admin = () => {
     if (!auth?.token || !API_URL) return;
     setUploadTest({ status: 'testing' });
     const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const token = (auth.token || '').trim();
     try {
-      const healthRes = await fetch(`${API_URL}/admin/health`, { cache: 'no-store' });
-      const health = await healthRes.json().catch(() => ({}));
-      if (!health.uploadOk) {
-        setUploadTest({ status: 'fail', msg: 'API: GITHUB_TOKEN не в проєкті lumu-api' });
-        return;
-      }
       const res = await fetch(`${API_URL}/admin/upload-image`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
-        body: JSON.stringify({ base64: pixel, productId: 99999, ext: 'jpg' }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ base64: pixel, productId: 99999, ext: 'jpg', token }),
       });
       const data = await res.json().catch(() => ({}));
       if (data.ok && data.url) {
@@ -131,6 +128,7 @@ export const Admin = () => {
     sessionStorage.removeItem(ADMIN_KEY);
     setAuth(null);
     setEditing(null);
+    setSaveError('');
   };
 
   const handleSaveProduct = (updated: Product) => {
@@ -185,6 +183,7 @@ export const Admin = () => {
           }
           let upRes: Response | null = null;
           let upData: { ok?: boolean; url?: string; error?: string } = {};
+          const uploadToken = (auth?.token ?? '').trim();
           const doUpload = async (): Promise<boolean> => {
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), 35000);
@@ -193,9 +192,9 @@ export const Admin = () => {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${auth?.token}`,
+                  'Authorization': `Bearer ${uploadToken}`,
                 },
-                body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg', token: auth?.token }),
+                body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg', token: uploadToken }),
                 signal: ctrl.signal,
               });
               clearTimeout(t);
@@ -218,7 +217,7 @@ export const Admin = () => {
               payload[i] = { ...payload[i], image: undefined };
               failedUploadIds.add(payload[i].id);
               strippedCount++;
-              const errMsg = upData.error || (upRes ? `HTTP ${upRes.status}` : 'Мережа недоступна. Перевірте lumu-api.vercel.app');
+              const errMsg = upData.error || (upRes ? `HTTP ${upRes.status}` : 'Мережа недоступна. Перевірте API URL.');
               setSaveError(prev => (prev ? prev + '; ' : '') + `Товар #${payload[i].id}: ${errMsg}`);
             }
           } catch (err) {
@@ -236,14 +235,15 @@ export const Admin = () => {
       });
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 60000);
+      const token = (auth?.token ?? '').trim();
       const res = await fetch(`${API_URL}/admin/products`, {
         method: 'PUT',
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth?.token}`,
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ products: toSend }),
+        body: JSON.stringify({ products: toSend, token }),
       });
       clearTimeout(timeout);
       const text = await res.text();
@@ -268,6 +268,7 @@ export const Admin = () => {
         await refetch();
         showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото не завантажилось — перевірте помилку вище` : 'Збережено в GitHub');
       } else {
+        if (res.status === 401) handleLogout();
         setSaveError(data.error || `Помилка ${res.status}`);
       }
     } catch (err) {
@@ -327,12 +328,12 @@ export const Admin = () => {
           )}
           {apiStatus === 'error' && (
             <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              API недоступний. Перевірте VITE_TELEGRAM_API_URL = https://lumu-api.vercel.app/api
+              API недоступний. Додайте VITE_ADMIN_API_URL або VITE_TELEGRAM_API_URL = https://lumu-pearl.vercel.app/api
             </p>
           )}
           {apiStatus === 'ok' && !uploadOk && (
             <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              Фото не завантажуватимуться: додайте GITHUB_TOKEN у Vercel → lumu-api → Environment Variables
+              Фото не завантажуватимуться: GITHUB_TOKEN у Vercel
             </p>
           )}
           <p className="mt-4 text-xs text-gray-400 text-center">
@@ -388,7 +389,7 @@ export const Admin = () => {
             {uploadTest.status === 'ok' && uploadTest.msg}
             {uploadTest.status === 'fail' && (
               <span>
-                Тест: {uploadTest.msg}. Перевірте GITHUB_TOKEN у проєкті lumu-api, Redeploy. <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">Відкрити API</a>
+                {uploadTest.msg}. <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">API health</a>
               </span>
             )}
             {uploadTest.status !== 'testing' && (
