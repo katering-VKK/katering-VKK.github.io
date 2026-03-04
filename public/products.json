@@ -4,6 +4,15 @@
     "name": "Test",
     "price": "100 ₴",
     "category": "Книги",
-    "tag": ""
+    "tag": "",
+    "image": "/images/products/1.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Нова іграшка",
+    "price": "250 ₴",
+    "category": "Іграшки",
+    "tag": "New",
+    "image": "/images/products/88888.jpg"
   }
 ]
