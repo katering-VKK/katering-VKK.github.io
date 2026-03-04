@@ -21,6 +21,7 @@ export class AdminErrorBoundary extends Component<Props, State> {
   }
 
   render() {
+    const { children } = (this as React.Component<Props, State>).props;
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -31,6 +32,6 @@ export class AdminErrorBoundary extends Component<Props, State> {
         </div>
       );
     }
-    return this.props.children;
+    return children;
   }
 }

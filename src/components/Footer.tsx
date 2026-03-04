@@ -90,7 +90,7 @@ export const Footer = () => {
           {/* Links Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-y-12 gap-x-8 lg:gap-x-12 mb-16">
             <div className="flex flex-col gap-5">
-              <h4 className="text-[11px] uppercase text-purple-400 tracking-[0.2em] font-bold">Магазин</h4>
+              <h4 className="text-xs uppercase text-purple-400 tracking-[0.2em] font-bold">Магазин</h4>
               <nav className="flex flex-col gap-3">
                 {[
                   { label: 'Книги', cat: 'Книги' },
@@ -113,7 +113,7 @@ export const Footer = () => {
             </div>
 
             <div className="flex flex-col gap-5">
-              <h4 className="text-[11px] uppercase text-purple-400 tracking-[0.2em] font-bold">Про нас</h4>
+              <h4 className="text-xs uppercase text-purple-400 tracking-[0.2em] font-bold">Про нас</h4>
               <nav className="flex flex-col gap-3">
                 <Link to="/about" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
                   Про нас
@@ -131,7 +131,7 @@ export const Footer = () => {
             </div>
 
             <div className="flex flex-col gap-5">
-              <h4 className="text-[11px] uppercase text-purple-400 tracking-[0.2em] font-bold">Клієнтам</h4>
+              <h4 className="text-xs uppercase text-purple-400 tracking-[0.2em] font-bold">Клієнтам</h4>
               <nav className="flex flex-col gap-3">
                 <Link to="/delivery" className="text-gray-400 hover:text-white transition-colors text-sm group flex items-center gap-1.5">
                   Доставка та оплата
@@ -145,7 +145,7 @@ export const Footer = () => {
             </div>
 
             <div className="flex flex-col gap-5">
-              <h4 className="text-[11px] uppercase text-purple-400 tracking-[0.2em] font-bold">Контакти</h4>
+              <h4 className="text-xs uppercase text-purple-400 tracking-[0.2em] font-bold">Контакти</h4>
               <div className="flex flex-col gap-4 text-sm">
                 <div className="flex items-start gap-3 text-gray-400 group">
                   <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-purple-500/20 transition-colors">

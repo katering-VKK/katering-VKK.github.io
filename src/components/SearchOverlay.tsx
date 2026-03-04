@@ -34,9 +34,9 @@ export const SearchOverlay = () => {
     if (query.length < 2) return [];
     const q = query.toLowerCase();
     return products.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      p.tag.toLowerCase().includes(q)
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.tag || '').toLowerCase().includes(q)
     ).slice(0, 12);
   }, [query, products]);
 
@@ -122,7 +122,7 @@ export const SearchOverlay = () => {
                             <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
+                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
                             <p className="text-sm font-bold truncate group-hover:text-purple-600 transition-colors">{product.name}</p>
                             <p className="text-sm text-gray-500 font-semibold">{product.price}</p>
                           </div>

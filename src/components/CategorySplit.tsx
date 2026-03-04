@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowUpRight } from 'lucide-react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
+import { useSiteContent } from '../context/SiteContentContext';
 
 const CATEGORY_CONFIG = [
   { title: 'Книги', description: 'Історії, що надихають', gradient: 'linear-gradient(135deg, hsl(10, 80%, 65%) 0%, hsl(35, 90%, 70%) 100%)' },
@@ -15,6 +16,7 @@ const CATEGORY_CONFIG = [
 export const CategorySplit = () => {
   const { navigateToCategory } = useStore();
   const { products } = useProducts();
+  const { content } = useSiteContent();
   const countsByCategory = useMemo(() => {
     const counts: Record<string, number> = {};
     const list = Array.isArray(products) ? products : [];
@@ -24,10 +26,21 @@ export const CategorySplit = () => {
     }
     return counts;
   }, [products]);
-  const categories = useMemo(() =>
-    CATEGORY_CONFIG.map(c => ({ ...c, count: countsByCategory[c.title] ?? 0 })),
-    [countsByCategory]
-  );
+  const categories = useMemo(() => {
+    const fullDesc: Record<string, string> = {
+      'Іграшки': content.categories?.toys?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Іграшки')!.description,
+      'Власне виробництво': content.categories?.ownProduction?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Власне виробництво')!.description,
+    };
+    return CATEGORY_CONFIG.map(c => {
+      const full = fullDesc[c.title] ?? c.description;
+      const short = full.length > 60 ? full.slice(0, 57) + '…' : full;
+      return {
+        ...c,
+        description: short,
+        count: countsByCategory[c.title] ?? 0,
+      };
+    });
+  }, [countsByCategory, content.categories]);
 
   return (
     <section className="py-24 bg-[var(--color-bobo-cream)]">

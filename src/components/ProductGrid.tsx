@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProducts } from '../context/ProductsContext';
+import { useSiteContent } from '../context/SiteContentContext';
 import { categories, parsePrice } from '../data/products';
 import { useStore } from '../store';
 import { ProductImage } from './ProductImage';
@@ -11,6 +12,7 @@ type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
 export const ProductGrid = () => {
   const { products, loading } = useProducts();
+  const { content } = useSiteContent();
   const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite, setQuickViewProduct } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
@@ -72,6 +74,11 @@ export const ProductGrid = () => {
         <div>
           <h2 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight uppercase text-gray-900">Каталог</h2>
           <p className="text-gray-400 text-sm mt-2">{filteredProducts.length} товарів</p>
+          {(activeCategory === 'Іграшки' && content.categories?.toys?.trim()) || (activeCategory === 'Власне виробництво' && content.categories?.ownProduction?.trim()) ? (
+            <p className="text-gray-600 text-sm mt-3 max-w-2xl leading-relaxed">
+              {activeCategory === 'Іграшки' ? content.categories?.toys : content.categories?.ownProduction}
+            </p>
+          ) : null}
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -161,7 +168,7 @@ export const ProductGrid = () => {
             >
               <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl border-2 border-gray-100 group-hover:border-violet-200 shadow-lg group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
                 {product.tag && (
-                  <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full shadow-md ${
+                  <span className={`absolute top-3 left-3 text-xs font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full shadow-md ${
                     product.tag === 'Хіт продажу' ? 'bg-[var(--color-bobo-yellow)] text-black' :
                     product.tag === 'New' ? 'bg-emerald-400 text-black' :
                     'bg-white/95 backdrop-blur-sm text-gray-800'
@@ -203,12 +210,12 @@ export const ProductGrid = () => {
                 </button>
               </div>
               <div className="px-1 py-2">
-                <p className="text-[11px] font-medium text-violet-500 uppercase tracking-wider mb-1.5">{product.category}</p>
+                <p className="text-xs font-medium text-violet-500 uppercase tracking-wider mb-1.5">{product.category}</p>
                 <h3 className="text-sm font-bold mb-2 group-hover:text-violet-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
                 <div className="flex items-center justify-between">
                   <p className="text-base font-bold text-gray-900">{product.price}</p>
                   {isInCart(product.id) && (
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">В кошику</span>
+                    <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">В кошику</span>
                   )}
                 </div>
               </div>
