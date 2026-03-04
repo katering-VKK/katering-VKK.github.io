@@ -96,17 +96,25 @@ export const Admin = () => {
 
   useEffect(() => {
     if (!API_URL) return;
-    fetch(`${API_URL}/admin/health`)
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    fetch(`${API_URL}/admin/health`, { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => {
-        setApiStatus(d.configured ? 'ok' : 'no-token');
-        setUploadOk(!!d.uploadOk);
+        setApiStatus(d?.configured ? 'ok' : 'no-token');
+        setUploadOk(!!d?.uploadOk);
       })
-      .catch(() => setApiStatus('error'));
+      .catch(() => setApiStatus('error'))
+      .finally(() => clearTimeout(t));
+    return () => { ctrl.abort(); clearTimeout(t); };
   }, [API_URL]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!password.trim()) {
+      setLoginError('Введіть пароль');
+      return;
+    }
     setLoginError('');
     setLoginLoading(true);
     try {
@@ -190,6 +198,7 @@ export const Admin = () => {
     e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
+    reader.onerror = () => setSaveError('Не вдалося прочитати файл');
     reader.onload = () => {
       try {
         const text = String(reader.result ?? '');
@@ -775,8 +784,9 @@ function AdminSections({
     const q = search.trim().toLowerCase();
     for (const c of ADMIN_CATEGORIES) map[c] = [];
     for (const p of localProducts) {
-      if (q && !p.name.toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q)) continue;
-      if (map[p.category]) map[p.category].push(p);
+      if (q && !(p.name || '').toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q)) continue;
+      const cat = String(p.category || '').trim() || 'Інше';
+      if (map[cat]) map[cat].push(p);
       else (map['Інше'] = map['Інше'] ?? []).push(p);
     }
     for (const c of Object.keys(map)) {
