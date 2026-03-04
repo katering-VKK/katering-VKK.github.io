@@ -7,6 +7,7 @@ import { useStore } from '../store';
 import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
 import { categories } from '../data/products';
+import { ProductImage } from '../components/ProductImage';
 import { resolveImageUrl } from '../utils/imageUrl';
 
 const ADMIN_CATEGORIES = categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу');
@@ -427,13 +428,7 @@ function AdminSections({
                             className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors"
                           >
                             <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm">
-                              {product.image ? (
-                                <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
-                                  <span className="text-white/50 text-xl font-black">{product.name.charAt(0)}</span>
-                                </div>
-                              )}
+                              <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-gray-900 truncate">{product.name}</p>
@@ -595,7 +590,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
             <div className="shrink-0">
               {form.image ? (
                 <div className="relative group">
-                  <img src={resolveImageUrl(form.image) || form.image} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
+                  <img src={form.image ? (resolveImageUrl(form.image) || form.image) : ''} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
                   <button
                     type="button"
                     onClick={() => setForm(p => ({ ...p, image: undefined }))}

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProducts } from '../context/ProductsContext';
-import { categories, getProductGradient, parsePrice } from '../data/products';
+import { categories, parsePrice } from '../data/products';
 import { useStore } from '../store';
-import { resolveImageUrl } from '../utils/imageUrl';
+import { ProductImage } from './ProductImage';
 
 const ITEMS_PER_PAGE = 12;
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
@@ -170,17 +170,7 @@ export const ProductGrid = () => {
                   </span>
                 )}
                 <div className="w-full h-full transition-transform duration-700 group-hover:scale-110 flex items-center justify-center relative overflow-hidden">
-                  {product.image ? (
-                    <img src={resolveImageUrl(product.image) || product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
-                  ) : (
-                    <>
-                      <div className="absolute inset-0" style={{ background: getProductGradient(product.id, product.category) }} />
-                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.15)_100%)]" />
-                      <span className="text-white/40 text-7xl font-black select-none drop-shadow-lg relative z-10 group-hover:scale-110 transition-transform">
-                        {product.name.charAt(0)}
-                      </span>
-                    </>
-                  )}
+                  <ProductImage product={product} className="absolute inset-0 w-full h-full" imgClassName="w-full h-full object-cover" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 

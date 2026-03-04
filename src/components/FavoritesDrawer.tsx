@@ -3,8 +3,7 @@ import { X, Heart, ShoppingBag, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
-import { getProductGradient } from '../data/products';
-import { resolveImageUrl } from '../utils/imageUrl';
+import { ProductImage } from './ProductImage';
 
 export const FavoritesDrawer = () => {
   const { favorites, isFavOpen, setFavOpen, toggleFavorite, addToCart } = useStore();
@@ -69,13 +68,7 @@ export const FavoritesDrawer = () => {
                       className="flex gap-4 bg-gray-50 rounded-2xl p-3"
                     >
                       <div className="w-20 h-20 rounded-xl shrink-0 overflow-hidden">
-                        {product.image ? (
-                          <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
-                            <span className="text-white/40 text-2xl font-black select-none">{product.name.charAt(0)}</span>
-                          </div>
-                        )}
+                        <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="sm" />
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>

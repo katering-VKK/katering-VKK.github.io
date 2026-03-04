@@ -3,8 +3,7 @@ import { Search, X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
-import { getProductGradient } from '../data/products';
-import { resolveImageUrl } from '../utils/imageUrl';
+import { ProductImage } from './ProductImage';
 
 export const SearchOverlay = () => {
   const { products } = useProducts();
@@ -120,13 +119,7 @@ export const SearchOverlay = () => {
                           className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left group"
                         >
                           <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden">
-                            {product.image ? (
-                              <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
-                                <span className="text-white/40 text-xl font-black select-none">{product.name.charAt(0)}</span>
-                              </div>
-                            )}
+                            <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>

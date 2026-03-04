@@ -3,9 +3,8 @@ import { X, ShoppingBag, Heart, Minus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
-import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
-import { resolveImageUrl } from '../utils/imageUrl';
+import { ProductImage } from './ProductImage';
 
 export const ProductQuickView = () => {
   const { products } = useProducts();
@@ -65,13 +64,7 @@ export const ProductQuickView = () => {
         >
           <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden shrink-0">
             <div className="w-full h-[min(40vw,180px)] sm:h-auto sm:w-[45%] sm:aspect-square sm:min-h-0 flex items-center justify-center shrink-0 overflow-hidden rounded-t-2xl sm:rounded-none">
-              {product.image ? (
-                <img src={resolveImageUrl(product.image) || product.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(product.id, product.category) }}>
-                  <span className="text-white/30 text-8xl font-black select-none">{product.name.charAt(0)}</span>
-                </div>
-              )}
+              <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" />
             </div>
             <div className="p-4 sm:p-8 flex flex-col flex-1 min-w-0">
               <div className="flex justify-between items-start gap-3 mb-3">
@@ -148,13 +141,7 @@ export const ProductQuickView = () => {
                     className="flex flex-col items-center gap-2 group text-left shrink-0 w-[140px] sm:w-full sm:min-w-0"
                   >
                     <div className="w-full aspect-square rounded-xl overflow-hidden transition-transform group-hover:scale-105 group-active:scale-95">
-                      {p.image ? (
-                        <img src={resolveImageUrl(p.image) || p.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(p.id, p.category) }}>
-                          <span className="text-white/30 text-2xl font-black">{p.name.charAt(0)}</span>
-                        </div>
-                      )}
+                      <ProductImage product={p} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="sm" />
                     </div>
                     <p className="text-xs font-bold truncate w-full">{p.name}</p>
                     <p className="text-xs font-semibold text-gray-500">{p.price}</p>

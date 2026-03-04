@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { X, Minus, Plus, Trash2, ShoppingBag, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
-import { useProducts, getProductGradient, parsePrice } from '../context/ProductsContext';
+import { useProducts, parsePrice } from '../context/ProductsContext';
 import { CheckoutForm } from './CheckoutForm';
-import { resolveImageUrl } from '../utils/imageUrl';
+import { ProductImage } from './ProductImage';
 
 type Step = 'cart' | 'checkout' | 'thanks';
 
@@ -117,13 +117,7 @@ export const CartDrawer = () => {
                         className="flex gap-4 bg-gray-50 rounded-2xl p-3"
                       >
                         <div className="w-20 h-20 rounded-xl flex-shrink-0 overflow-hidden">
-                          {latest.image ? (
-                            <img src={resolveImageUrl(latest.image) || latest.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center" style={{ background: getProductGradient(latest.id, latest.category) }}>
-                              <span className="text-white/40 text-2xl font-black select-none">{latest.name.charAt(0)}</span>
-                            </div>
-                          )}
+                          <ProductImage product={latest} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="sm" />
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
