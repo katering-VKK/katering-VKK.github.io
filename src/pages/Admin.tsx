@@ -132,32 +132,55 @@ export const Admin = () => {
         tag: String(p.tag || '').trim(),
         ...(p.image && { image: String(p.image) }),
       }));
+      let strippedCount = 0;
       for (let i = 0; i < payload.length; i++) {
         const img = payload[i].image;
         if (img && img.startsWith('data:image/')) {
           const rawBase64 = img.replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
-          const upRes = await fetch(`${API_URL}/admin/upload-image`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${auth?.token}`,
-            },
-            body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg' }),
-          });
-          const upData = await upRes.json().catch(() => ({}));
-          if (upData.ok && upData.url) {
-            payload = payload.map((p, j) => j === i ? { ...p, image: upData.url } : p);
+          if (rawBase64.length > 500_000) {
+            payload[i] = { ...payload[i], image: undefined };
+            strippedCount++;
+            continue;
+          }
+          try {
+            const upRes = await fetch(`${API_URL}/admin/upload-image`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${auth?.token}`,
+              },
+              body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg' }),
+            });
+            const upData = await upRes.json().catch(() => ({}));
+            if (upData.ok && upData.url) {
+              payload[i] = { ...payload[i], image: upData.url };
+            } else {
+              payload[i] = { ...payload[i], image: undefined };
+              strippedCount++;
+            }
+          } catch {
+            payload[i] = { ...payload[i], image: undefined };
+            strippedCount++;
           }
         }
       }
+      const toSend = payload.map(p => {
+        const img = p.image;
+        if (img && img.startsWith('data:')) return { ...p, image: undefined };
+        return p;
+      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
       const res = await fetch(`${API_URL}/admin/products`, {
         method: 'PUT',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${auth?.token}`,
         },
-        body: JSON.stringify({ products: payload }),
+        body: JSON.stringify({ products: toSend }),
       });
+      clearTimeout(timeout);
       const text = await res.text();
       let data: { ok?: boolean; error?: string } = {};
       try {
@@ -168,7 +191,8 @@ export const Admin = () => {
       }
       if (data.ok) {
         await refetch();
-        showToast('Збережено в GitHub');
+        setLocalProducts(payload);
+        showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото пропущено (завантажте окремо)` : 'Збережено в GitHub');
       } else {
         setSaveError(data.error || `Помилка ${res.status}`);
       }
