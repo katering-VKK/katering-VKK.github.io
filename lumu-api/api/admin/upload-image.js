@@ -166,9 +166,8 @@ export default async function handler(req, res) {
       return send(502, { ok: false, error: msg });
     }
 
-    const branch = process.env.GITHUB_BRANCH || 'main';
-    const rawUrl = `https://raw.githubusercontent.com/${repo}/${branch}/${filePath}`;
-    return send(200, { ok: true, url: rawUrl });
+    const imageUrl = `/images/products/${productId}.${safeExt}`;
+    return send(200, { ok: true, url: imageUrl });
   } catch (err) {
     return send(502, { ok: false, error: (err && err.message) || 'Failed' });
   }
