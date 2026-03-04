@@ -61,6 +61,12 @@ export const Admin = () => {
     setUploadTest({ status: 'testing' });
     const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     try {
+      const healthRes = await fetch(`${API_URL}/admin/health`, { cache: 'no-store' });
+      const health = await healthRes.json().catch(() => ({}));
+      if (!health.uploadOk) {
+        setUploadTest({ status: 'fail', msg: 'API: IMGBB/GITHUB_TOKEN не в проєкті lumu-api' });
+        return;
+      }
       const res = await fetch(`${API_URL}/admin/upload-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${auth.token}` },
@@ -382,7 +388,7 @@ export const Admin = () => {
             {uploadTest.status === 'ok' && uploadTest.msg}
             {uploadTest.status === 'fail' && (
               <span>
-                Тест: {uploadTest.msg}. Додайте IMGBB_API_KEY у Vercel — <a href="https://api.imgbb.com/" target="_blank" rel="noreferrer" className="underline">безкоштовно</a>.
+                Тест: {uploadTest.msg}. Перевірте: 1) Env vars у проєкті <strong>lumu-api</strong> (не головному), 2) Redeploy lumu-api після змін, 3) Режим інкогніто (блокувальники). <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">Відкрити API</a>
               </span>
             )}
             {uploadTest.status !== 'testing' && (
