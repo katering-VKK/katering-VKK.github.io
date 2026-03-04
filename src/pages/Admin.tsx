@@ -173,7 +173,8 @@ export const Admin = () => {
         setSaveError(data.error || `Помилка ${res.status}`);
       }
     } catch (err) {
-      setSaveError((err as Error).message || 'Помилка з\'єднання');
+      const msg = (err as Error).message || 'Помилка з\'єднання';
+      setSaveError(msg + (msg.includes('fetch') ? ` (API: ${API_URL})` : ''));
     } finally {
       setSaving(false);
     }

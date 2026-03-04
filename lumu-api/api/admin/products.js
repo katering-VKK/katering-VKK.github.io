@@ -1,10 +1,11 @@
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'http://localhost:3000'];
-  if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
-  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://lumu.com.ua');
+  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'http://localhost:3000', 'http://localhost:5173', 'https://katering-VKK.github.io'];
+  if (origin.includes('vercel.app') || origin.includes('github.io') || origin.includes('127.0.0.1')) allowed.push(origin);
+  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : '*');
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PUT') return res.status(405).json({ error: 'Method not allowed' });
