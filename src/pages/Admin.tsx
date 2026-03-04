@@ -111,7 +111,7 @@ export const Admin = () => {
     const newProduct: Product = {
       id: maxId + 1,
       name: 'Новий товар',
-      price: '0 ₴',
+      price: '100 ₴',
       category,
       tag: '',
     };
@@ -119,8 +119,9 @@ export const Admin = () => {
     setEditing(newProduct);
   };
 
-  const handleDeleteProduct = (id: number) => {
-    if (confirm('Видалити цей товар?')) {
+  const handleDeleteProduct = (id: number, name?: string) => {
+    const label = name ? `«${name.length > 40 ? name.slice(0, 40) + '…' : name}»` : 'цей товар';
+    if (confirm(`Видалити ${label}?`)) {
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
@@ -198,6 +199,7 @@ export const Admin = () => {
       if (data.ok) {
         setLocalProducts(payload);
         skipSyncRef.current = true;
+        setSaveError('');
         await refetch();
         showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото пропущено (завантажте окремо)` : 'Збережено в GitHub');
       } else {
@@ -303,7 +305,12 @@ export const Admin = () => {
         </div>
 
         {saveError && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm">{saveError}</div>
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm flex items-start justify-between gap-3">
+            <span>{saveError}</span>
+            <button onClick={() => setSaveError('')} className="p-1 hover:bg-red-100 rounded-lg shrink-0" title="Закрити">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
 
         {loading ? (
@@ -343,7 +350,7 @@ function AdminSections({
 }: {
   localProducts: Product[];
   onEdit: (p: Product) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: number, name?: string) => void;
   onAdd: (category: string) => void;
   getProductGradient: (id: number, category: string) => string;
 }) {
@@ -449,7 +456,7 @@ function AdminSections({
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => onDelete(product.id)}
+                                onClick={() => onDelete(product.id, product.name)}
                                 className="p-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
                                 title="Видалити"
                               >
@@ -485,6 +492,12 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
     setImgError('');
     setValidationError('');
   }, [product.id]);
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
+  }, [onClose]);
 
   const resizeAndEncode = (file: File, maxW = 400, maxH = 400, quality = 0.65): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -567,7 +580,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
       setValidationError('Введіть назву товару');
       return;
     }
-    const price = String(form.price || '').trim();
+    let price = String(form.price || '').trim();
     if (!price) {
       setValidationError('Введіть ціну');
       return;
@@ -577,6 +590,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
       setValidationError('Невірний формат ціни (наприклад: 450 ₴)');
       return;
     }
+    if (!price.includes('₴')) price = priceNum + ' ₴';
     onSave({ ...form, name, price });
     onClose();
   };
@@ -619,8 +633,8 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
               )}
               <label className="mt-2 block">
                 <input type="file" accept="image/*" className="hidden" onChange={handleImagePick} disabled={loading} />
-                <span className="inline-block px-3 py-1.5 bg-violet-100 text-violet-700 hover:bg-violet-200 rounded-lg text-xs font-medium cursor-pointer transition-colors">
-                  {loading ? '…' : 'Обрати фото'}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-100 text-violet-700 hover:bg-violet-200 rounded-lg text-xs font-medium cursor-pointer transition-colors disabled:opacity-70">
+                  {loading ? <><Loader2 className="w-3 h-3 animate-spin" /> Завантаження…</> : 'Обрати фото'}
                 </span>
               </label>
               <p className="mt-1 text-[10px] text-gray-400">Фото зберігається разом з товаром</p>
@@ -669,7 +683,11 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
               </div>
             </div>
           </div>
-          {imgError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{imgError}</p>}
+          {imgError && (
+            <p className={`text-xs px-3 py-2 rounded-lg ${imgError.includes('Збережено') ? 'text-amber-700 bg-amber-50' : 'text-red-500 bg-red-50'}`}>
+              {imgError}
+            </p>
+          )}
           {validationError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{validationError}</p>}
         </div>
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
