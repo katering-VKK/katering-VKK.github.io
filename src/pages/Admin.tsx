@@ -305,10 +305,15 @@ export const Admin = () => {
           }
         }
       }
+      const cacheBust = Date.now();
       const toSend = payload.map(p => {
-        const img = p.image;
+        let img = p.image;
         if (img && img.startsWith('data:')) return { ...p, image: undefined };
-        return p;
+        if (img && typeof img === 'string' && !img.startsWith('data:')) {
+          const base = img.split('?')[0];
+          img = `${base}?t=${cacheBust}`;
+        }
+        return { ...p, image: img || undefined };
       });
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 60000);
