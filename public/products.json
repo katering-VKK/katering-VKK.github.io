@@ -4,7 +4,6 @@
     "name": "Test",
     "price": "100 ₴",
     "category": "Книги",
-    "tag": "",
-    "image": "/images/products/1.jpg"
+    "tag": ""
   }
 ]
