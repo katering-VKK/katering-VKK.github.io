@@ -61,6 +61,7 @@ export const Admin = () => {
   const skipSyncRef = useRef(false);
   const hasLocalChangesRef = useRef(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreviews, setImagePreviews] = useState<Record<number, string>>({});
 
   const testUpload = async () => {
     if (!auth?.token || !API_URL) return;
@@ -548,6 +549,7 @@ export const Admin = () => {
         ) : (
           <AdminSections
             localProducts={localProducts}
+            imagePreviews={imagePreviews}
             onEdit={setEditing}
             onDelete={handleDeleteProduct}
             onAdd={handleAddProduct}
@@ -559,9 +561,16 @@ export const Admin = () => {
       <AnimatePresence>
         {editing && (
         <ProductEditModal
+          key={editing.id}
           product={editing}
-          onSave={handleSaveProduct}
-          onClose={() => setEditing(null)}
+          onSave={(p) => { setImagePreviews(prev => { const next = { ...prev }; delete next[p.id]; return next; }); handleSaveProduct(p); }}
+          onClose={() => { if (editing) setImagePreviews(prev => { const next = { ...prev }; delete next[editing.id]; return next; }); setEditing(null); }}
+          onFormChange={(updated) => {
+            hasLocalChangesRef.current = true;
+            setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+            setEditing(updated);
+          }}
+          onImagePreview={(productId, dataUrl) => setImagePreviews(prev => dataUrl ? { ...prev, [productId]: dataUrl } : (() => { const next = { ...prev }; delete next[productId]; return next; })())}
           onUnauthorized={handleLogout}
           apiUrl={API_URL}
           authToken={auth?.token ?? ''}
@@ -775,12 +784,14 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
 
 function AdminSections({
   localProducts,
+  imagePreviews = {},
   onEdit,
   onDelete,
   onAdd,
   getProductGradient,
 }: {
   localProducts: Product[];
+  imagePreviews?: Record<number, string>;
   onEdit: (p: Product) => void;
   onDelete: (id: number, name?: string) => void;
   onAdd: (category: string) => void;
@@ -893,13 +904,15 @@ function AdminSections({
                       </div>
                     ) : (
                       <div className="grid gap-3">
-                        {items.map(product => (
+                        {items.map(product => {
+                          const productForDisplay = imagePreviews[product.id] ? { ...product, image: imagePreviews[product.id] } : product;
+                          return (
                           <div
                             key={product.id}
                             className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors"
                           >
                             <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm">
-                              <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
+                              <ProductImage product={productForDisplay} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-gray-900 truncate">{product.name}</p>
@@ -922,7 +935,8 @@ function AdminSections({
                               </button>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -936,11 +950,14 @@ function AdminSections({
   );
 }
 
-function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, authToken }: {
+function ProductEditModal({ product, onSave, onClose, onUnauthorized, onFormChange, onImagePreview, apiUrl, authToken }: {
   product: Product; onSave: (p: Product) => void; onClose: () => void; onUnauthorized?: () => void;
+  onFormChange?: (p: Product) => void;
+  onImagePreview?: (productId: number, dataUrl: string | null) => void;
   apiUrl: string; authToken: string;
 }) {
   const [form, setForm] = useState(product);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -948,6 +965,7 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
 
   useEffect(() => {
     setForm(product);
+    setPreviewDataUrl(null);
     setImgError('');
     setValidationError('');
   }, [product.id]);
@@ -1017,20 +1035,36 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
         });
         const data = await res.json().catch(() => ({}));
         if (data.ok && data.url) {
-          setForm(p => ({ ...p, image: data.url }));
+          const updated = { ...form, image: data.url };
+          setForm(updated);
+          setPreviewDataUrl(dataUrl);
+          onFormChange?.(updated);
+          onImagePreview?.(product.id, dataUrl);
         } else {
-          setForm(p => ({ ...p, image: dataUrl }));
+          const updated = { ...form, image: dataUrl };
+          setForm(updated);
+          setPreviewDataUrl(null);
+          onFormChange?.(updated);
+          onImagePreview?.(product.id, dataUrl);
           if (res.status === 401) onUnauthorized?.();
           const errMsg = data.error || `HTTP ${res.status}`;
           setImgError(`Завантаження не вдалося: ${errMsg}. Фото збережено локально — натисніть «Зберегти в GitHub» для повторної спроби.`);
         }
       } else {
-        setForm(p => ({ ...p, image: dataUrl }));
+        const updated = { ...form, image: dataUrl };
+        setForm(updated);
+        setPreviewDataUrl(null);
+        onFormChange?.(updated);
+        onImagePreview?.(product.id, dataUrl);
       }
     } catch (err) {
       try {
         dataUrl = await resizeAndEncode(file);
-        setForm(p => ({ ...p, image: dataUrl }));
+        const updated = { ...form, image: dataUrl };
+        setForm(updated);
+        setPreviewDataUrl(null);
+        onFormChange?.(updated);
+        onImagePreview?.(product.id, dataUrl);
         setImgError('Фото збережено — натисніть «Зберегти в GitHub»');
       } catch {
         setImgError((err as Error).message || 'Помилка');
@@ -1086,10 +1120,16 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
             <div className="shrink-0">
               {form.image ? (
                 <div className="relative group">
-                  <img src={form.image ? (resolveImageUrl(form.image) || form.image) : ''} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
+                  <img src={previewDataUrl || (form.image.startsWith('data:') ? form.image : (resolveImageUrl(form.image) || form.image))} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
                   <button
                     type="button"
-                    onClick={() => setForm(p => ({ ...p, image: undefined }))}
+                    onClick={() => {
+                      const updated = { ...form, image: undefined };
+                      setForm(updated);
+                      setPreviewDataUrl(null);
+                      onFormChange?.(updated);
+                      onImagePreview?.(product.id, null);
+                    }}
                     className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Видалити фото"
                   >
