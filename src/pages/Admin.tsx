@@ -195,7 +195,7 @@ export const Admin = () => {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${auth?.token}`,
                 },
-                body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg' }),
+                body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg', token: auth?.token }),
                 signal: ctrl.signal,
               });
               clearTimeout(t);
@@ -647,6 +647,7 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
             base64: rawBase64,
             productId: product.id,
             ext: 'jpg',
+            token: authToken,
           }),
         });
         const data = await res.json().catch(() => ({}));

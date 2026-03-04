@@ -43,12 +43,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Invalid form' });
     }
   } else {
-    token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
     try {
       body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     } catch {
       return res.status(400).json({ ok: false, error: 'Invalid JSON' });
     }
+    token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
+    if (!token && body.token) token = body.token;
   }
 
   const tokenTrim = (token || '').toString().trim();
