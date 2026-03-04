@@ -171,29 +171,48 @@ export const Admin = () => {
         const img = payload[i].image;
         if (img && img.startsWith('data:image/')) {
           const rawBase64 = img.replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
-          if (rawBase64.length > 1_500_000) {
+          if (rawBase64.length > 800_000) {
             payload[i] = { ...payload[i], image: undefined };
             failedUploadIds.add(payload[i].id);
             strippedCount++;
             continue;
           }
+          let upRes: Response | null = null;
+          let upData: { ok?: boolean; url?: string; error?: string } = {};
+          const doUpload = async (): Promise<boolean> => {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 35000);
+            try {
+              upRes = await fetch(`${API_URL}/admin/upload-image`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${auth?.token}`,
+                },
+                body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg' }),
+                signal: ctrl.signal,
+              });
+              clearTimeout(t);
+              upData = await upRes.json().catch(() => ({}));
+              return upData.ok === true && !!upData.url;
+            } catch {
+              clearTimeout(t);
+              return false;
+            }
+          };
           try {
-            const upRes = await fetch(`${API_URL}/admin/upload-image`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${auth?.token}`,
-              },
-              body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg' }),
-            });
-            const upData = await upRes.json().catch(() => ({}));
-            if (upData.ok && upData.url) {
+            let ok = await doUpload();
+            if (!ok && (upRes === null || (upRes?.status ?? 0) >= 500)) {
+              await new Promise(r => setTimeout(r, 2000));
+              ok = await doUpload();
+            }
+            if (ok && upData.url) {
               payload[i] = { ...payload[i], image: upData.url };
             } else {
               payload[i] = { ...payload[i], image: undefined };
               failedUploadIds.add(payload[i].id);
               strippedCount++;
-              const errMsg = upData.error || `HTTP ${upRes.status}`;
+              const errMsg = upData.error || (upRes ? `HTTP ${upRes.status}` : 'Мережа недоступна. Перевірте lumu-api.vercel.app');
               setSaveError(prev => (prev ? prev + '; ' : '') + `Товар #${payload[i].id}: ${errMsg}`);
             }
           } catch (err) {
