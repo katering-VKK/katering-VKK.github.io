@@ -1,26 +1,16 @@
 [
   {
     "id": 1,
-    "name": "Test1",
+    "name": "Test",
     "price": "100 ₴",
     "category": "Книги",
-    "tag": "",
-    "image": "/images/products/1.jpg?t=1772644131707"
+    "tag": ""
   },
   {
     "id": 2,
-    "name": "Весела хуртовина",
-    "price": "100 ₴",
-    "category": "Книги",
-    "tag": "New",
-    "image": "/images/products/2.jpg?t=1772644131707"
-  },
-  {
-    "id": 3,
-    "name": "Новий товар",
-    "price": "100 ₴",
+    "name": "Тест іграшка",
+    "price": "200 ₴",
     "category": "Іграшки",
-    "tag": "",
-    "image": "/images/products/3.jpg?t=1772644131707"
+    "tag": "New"
   }
 ]
