@@ -421,6 +421,7 @@ export const Admin = () => {
           product={editing}
           onSave={handleSaveProduct}
           onClose={() => setEditing(null)}
+          onUnauthorized={handleLogout}
           apiUrl={API_URL}
           authToken={auth?.token ?? ''}
         />
@@ -570,8 +571,8 @@ function AdminSections({
   );
 }
 
-function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
-  product: Product; onSave: (p: Product) => void; onClose: () => void;
+function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, authToken }: {
+  product: Product; onSave: (p: Product) => void; onClose: () => void; onUnauthorized?: () => void;
   apiUrl: string; authToken: string;
 }) {
   const [form, setForm] = useState(product);
@@ -653,6 +654,7 @@ function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
           setForm(p => ({ ...p, image: data.url }));
         } else {
           setForm(p => ({ ...p, image: dataUrl }));
+          if (res.status === 401) onUnauthorized?.();
           const errMsg = data.error || `HTTP ${res.status}`;
           setImgError(`Завантаження не вдалося: ${errMsg}. Фото збережено локально — натисніть «Зберегти в GitHub» для повторної спроби.`);
         }

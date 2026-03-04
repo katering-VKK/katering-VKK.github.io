@@ -51,8 +51,10 @@ export default async function handler(req, res) {
     }
   }
 
-  if (token !== adminToken) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  const tokenTrim = (token || '').toString().trim();
+  const adminTrim = (adminToken || '').toString().trim();
+  if (!adminTrim || tokenTrim !== adminTrim) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized. Вийдіть і увійдіть знову.' });
   }
 
   const { base64, productId, ext = 'jpg' } = body;
