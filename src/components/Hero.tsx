@@ -12,11 +12,13 @@ export const Hero = () => {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,215,0,0.15)_0%,transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(139,92,246,0.25)_0%,_transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(99,102,241,0.2)_0%,_transparent_40%)]" />
-        <div className="absolute inset-0 bg-black/15" />
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-violet-900 to-fuchsia-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_80%_at_50%_-30%,rgba(255,193,7,0.2)_0%,transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_rgba(168,85,247,0.35)_0%,_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(99,102,241,0.25)_0%,_transparent_45%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(236,72,153,0.1)_0%,transparent_50%)]" />
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
       </div>
 
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -73,13 +75,13 @@ export const Hero = () => {
         >
           <button
             onClick={() => navigateToCategory('Книги')}
-            className="group relative overflow-hidden bg-[var(--color-bobo-yellow)] text-black px-12 py-4 rounded-full font-bold text-sm transition-all duration-300 hover:shadow-[0_0_40px_-8px_rgba(255,215,0,0.6)] hover:scale-[1.02] active:scale-[0.98] min-w-[180px] uppercase tracking-widest"
+            className="group relative overflow-hidden bg-[var(--color-bobo-yellow)] text-black px-14 py-4.5 rounded-full font-display font-bold text-sm transition-all duration-500 hover:shadow-[0_0_50px_-10px_rgba(255,193,7,0.7)] hover:scale-[1.04] active:scale-[0.98] min-w-[200px] uppercase tracking-[0.2em] hover:brightness-105"
           >
             <span className="relative z-10">Книги</span>
           </button>
           <button
             onClick={() => navigateToCategory('Іграшки')}
-            className="group relative overflow-hidden bg-white/10 border-2 border-white/80 text-white px-12 py-4 rounded-full font-bold text-sm transition-all duration-300 hover:bg-white/20 hover:border-white hover:shadow-[0_0_30px_-8px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-[0.98] min-w-[180px] uppercase tracking-widest backdrop-blur-md"
+            className="group relative overflow-hidden bg-white/10 border-2 border-white/70 text-white px-14 py-4.5 rounded-full font-display font-bold text-sm transition-all duration-500 hover:bg-white/25 hover:border-white hover:shadow-[0_0_40px_-8px_rgba(255,255,255,0.3)] hover:scale-[1.04] active:scale-[0.98] min-w-[200px] uppercase tracking-[0.2em] backdrop-blur-xl"
           >
             <span className="relative z-10">Іграшки</span>
           </button>
