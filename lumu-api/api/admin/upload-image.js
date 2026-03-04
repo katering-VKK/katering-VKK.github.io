@@ -8,21 +8,38 @@ function allowOrigin(origin) {
   return '*';
 }
 
+function htmlResponse(data) {
+  const json = JSON.stringify(data).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+  return `<!DOCTYPE html><html><body><script type="application/json" id="d">${json}</script><script>try{window.parent.postMessage(JSON.parse(document.getElementById("d").textContent),"*")}catch(e){}</script></body></html>`;
+}
+
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
+  const formatHtml = req.query?.format === 'html' || (req.url && req.url.includes('format=html'));
   res.setHeader('Access-Control-Allow-Origin', allowOrigin(origin));
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    if (formatHtml) return res.status(405).send(htmlResponse({ type: 'lumu-upload', ok: false, error: 'Method not allowed' }));
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   const adminToken = process.env.ADMIN_TOKEN;
   const ghToken = process.env.GITHUB_TOKEN;
 
+  const send = (status, data) => {
+    if (formatHtml) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(status).send(htmlResponse({ type: 'lumu-upload', ...data }));
+    }
+    return res.status(status).json(data);
+  };
+
   if (!adminToken || !ghToken) {
-    return res.status(500).json({ ok: false, error: 'Not configured' });
+    return send(500, { ok: false, error: 'Not configured' });
   }
 
   let token = null;
@@ -41,24 +58,24 @@ export default async function handler(req, res) {
         ext: parsed.ext || 'jpg',
       };
     } catch {
-      return res.status(400).json({ ok: false, error: 'Invalid form' });
+      return send(400, { ok: false, error: 'Invalid form' });
     }
   } else {
     token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null;
     try {
       body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
     } catch {
-      return res.status(400).json({ ok: false, error: 'Invalid JSON' });
+      return send(400, { ok: false, error: 'Invalid JSON' });
     }
   }
 
   if (token !== adminToken) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    return send(401, { ok: false, error: 'Unauthorized' });
   }
 
   const { base64, productId, ext = 'jpg' } = body;
   if (!base64 || !productId) {
-    return res.status(400).json({ ok: false, error: 'Missing base64 or productId' });
+    return send(400, { ok: false, error: 'Missing base64 or productId' });
   }
 
   const safeExt = (String(ext).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg').slice(0, 4);
@@ -70,11 +87,11 @@ export default async function handler(req, res) {
   try {
     content = Buffer.from(rawBase64, 'base64').toString('base64');
   } catch {
-    return res.status(400).json({ ok: false, error: 'Invalid base64' });
+    return send(400, { ok: false, error: 'Invalid base64' });
   }
 
   if (content.length > 2 * 1024 * 1024) {
-    return res.status(400).json({ ok: false, error: 'Image too large (max 2MB)' });
+    return send(400, { ok: false, error: 'Image too large (max 2MB)' });
   }
 
   const imgbbKey = process.env.IMGBB_API_KEY;
@@ -90,11 +107,11 @@ export default async function handler(req, res) {
       });
       const idata = await ir.json();
       if (idata?.data?.url) {
-        return res.status(200).json({ ok: true, url: idata.data.url });
+        return send(200, { ok: true, url: idata.data.url });
       }
-      return res.status(502).json({ ok: false, error: idata?.error?.message || 'ImgBB failed' });
+      return send(502, { ok: false, error: idata?.error?.message || 'ImgBB failed' });
     } catch (e) {
-      return res.status(502).json({ ok: false, error: (e && e.message) || 'ImgBB error' });
+      return send(502, { ok: false, error: (e && e.message) || 'ImgBB error' });
     }
   }
 
@@ -119,7 +136,7 @@ export default async function handler(req, res) {
       } catch {
         msg = err.slice(0, 150);
       }
-      return res.status(502).json({ ok: false, error: msg });
+      return send(502, { ok: false, error: msg });
     }
 
     const putRes = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
@@ -146,12 +163,12 @@ export default async function handler(req, res) {
       } catch {
         msg = err.slice(0, 150);
       }
-      return res.status(502).json({ ok: false, error: msg });
+      return send(502, { ok: false, error: msg });
     }
 
     const imageUrl = `/images/products/${productId}.${safeExt}`;
-    return res.status(200).json({ ok: true, url: imageUrl });
+    return send(200, { ok: true, url: imageUrl });
   } catch (err) {
-    return res.status(502).json({ ok: false, error: (err && err.message) || 'Failed' });
+    return send(502, { ok: false, error: (err && err.message) || 'Failed' });
   }
 }

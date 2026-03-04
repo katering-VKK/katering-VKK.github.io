@@ -33,6 +33,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing products array' });
   }
 
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i];
+    if (p == null || typeof p !== 'object') {
+      return res.status(400).json({ error: `Product ${i + 1}: invalid object` });
+    }
+    const name = String(p.name || '').trim();
+    if (!name) {
+      return res.status(400).json({ error: `Product ${i + 1}: name is required` });
+    }
+    const price = String(p.price || '').trim();
+    if (!price) {
+      return res.status(400).json({ error: `Product ${i + 1}: price is required` });
+    }
+    const priceNum = parseInt(String(price).replace(/\s/g, '').replace('₴', ''), 10);
+    if (isNaN(priceNum) || priceNum < 0) {
+      return res.status(400).json({ error: `Product ${i + 1}: invalid price format` });
+    }
+    if (p.image && typeof p.image === 'string' && p.image.startsWith('data:image/')) {
+      return res.status(400).json({ error: `Product ${i + 1}: upload images via /admin/upload-image first` });
+    }
+  }
+
   const repo = process.env.GITHUB_REPO || 'katering-VKK/katering-VKK.github.io';
   const filePath = 'public/products.json';
   const content = JSON.stringify(products, null, 2);

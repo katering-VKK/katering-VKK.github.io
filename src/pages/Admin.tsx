@@ -118,7 +118,7 @@ export const Admin = () => {
     setSaveError('');
     setSaving(true);
     try {
-      const payload = localProducts.map(p => ({
+      let payload = localProducts.map(p => ({
         id: Number(p.id),
         name: String(p.name || '').trim(),
         price: String(p.price || '').trim(),
@@ -126,6 +126,24 @@ export const Admin = () => {
         tag: String(p.tag || '').trim(),
         ...(p.image && { image: String(p.image) }),
       }));
+      for (let i = 0; i < payload.length; i++) {
+        const img = payload[i].image;
+        if (img && img.startsWith('data:image/')) {
+          const rawBase64 = img.replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
+          const upRes = await fetch(`${API_URL}/admin/upload-image`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${auth?.token}`,
+            },
+            body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg' }),
+          });
+          const upData = await upRes.json().catch(() => ({}));
+          if (upData.ok && upData.url) {
+            payload = payload.map((p, j) => j === i ? { ...p, image: upData.url } : p);
+          }
+        }
+      }
       const res = await fetch(`${API_URL}/admin/products`, {
         method: 'PUT',
         headers: {
@@ -269,6 +287,8 @@ export const Admin = () => {
           product={editing}
           onSave={handleSaveProduct}
           onClose={() => setEditing(null)}
+          apiUrl={API_URL}
+          authToken={auth?.token ?? ''}
         />
         )}
       </AnimatePresence>
@@ -419,12 +439,20 @@ function AdminSections({
   );
 }
 
-function ProductEditModal({ product, onSave, onClose }: {
+function ProductEditModal({ product, onSave, onClose, apiUrl, authToken }: {
   product: Product; onSave: (p: Product) => void; onClose: () => void;
+  apiUrl: string; authToken: string;
 }) {
   const [form, setForm] = useState(product);
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState('');
+  const [validationError, setValidationError] = useState('');
+
+  useEffect(() => {
+    setForm(product);
+    setImgError('');
+    setValidationError('');
+  }, [product.id]);
 
   const resizeAndEncode = (file: File, maxW = 400, maxH = 400, quality = 0.65): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -462,12 +490,55 @@ function ProductEditModal({ product, onSave, onClose }: {
     setLoading(true);
     try {
       const dataUrl = await resizeAndEncode(file);
-      setForm(p => ({ ...p, image: dataUrl }));
+      const rawBase64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+      if (apiUrl && authToken) {
+        const res = await fetch(`${apiUrl}/admin/upload-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            base64: rawBase64,
+            productId: product.id,
+            ext: 'jpg',
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.ok && data.url) {
+          setForm(p => ({ ...p, image: data.url }));
+        } else {
+          setImgError(data.error || 'Невдалося завантажити фото');
+        }
+      } else {
+        setForm(p => ({ ...p, image: dataUrl }));
+      }
     } catch (err) {
       setImgError((err as Error).message || 'Помилка');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = () => {
+    setValidationError('');
+    const name = String(form.name || '').trim();
+    if (!name) {
+      setValidationError('Введіть назву товару');
+      return;
+    }
+    const price = String(form.price || '').trim();
+    if (!price) {
+      setValidationError('Введіть ціну');
+      return;
+    }
+    const priceNum = parseInt(price.replace(/\s/g, '').replace('₴', ''), 10);
+    if (isNaN(priceNum) || priceNum < 0) {
+      setValidationError('Невірний формат ціни (наприклад: 450 ₴)');
+      return;
+    }
+    onSave({ ...form, name, price });
+    onClose();
   };
 
   return (
@@ -541,7 +612,7 @@ function ProductEditModal({ product, onSave, onClose }: {
                     onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-white"
                   >
-                    {ADMIN_CATEGORIES.map(c => (
+                    {[...ADMIN_CATEGORIES, 'Інше'].map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -559,10 +630,11 @@ function ProductEditModal({ product, onSave, onClose }: {
             </div>
           </div>
           {imgError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{imgError}</p>}
+          {validationError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{validationError}</p>}
         </div>
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
           <button
-            onClick={() => onSave(form)}
+            onClick={handleSave}
             className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-xl font-semibold transition-colors"
           >
             Зберегти
