@@ -610,57 +610,76 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
     }
   };
 
-  const Field = ({ label, value, onChange, multiline }: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) => (
-    <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</label>
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    hero: true, about: true, delivery: true, contacts: true, editorial: true, reviews: true,
+  });
+  const toggleSection = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
+
+  const fieldClass = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-400 outline-none text-base leading-relaxed transition-colors';
+  const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
+  const Field = ({ label, value, onChange, multiline, rows = 6, hint }: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; rows?: number; hint?: string }) => (
+    <div className="space-y-1">
+      <label className={labelClass}>{label}</label>
+      {hint && <p className="text-xs text-gray-500 mb-1">{hint}</p>}
       {multiline ? (
-        <textarea value={value} onChange={e => onChange(e.target.value)} rows={4} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 outline-none text-sm" />
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          rows={rows}
+          className={`${fieldClass} resize-y min-h-[120px]`}
+          placeholder="Введі текст..."
+        />
       ) : (
-        <input value={value} onChange={e => onChange(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 outline-none text-sm" />
+        <input value={value} onChange={e => onChange(e.target.value)} className={fieldClass} placeholder="Введі текст..." />
       )}
     </div>
   );
 
+  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => {
+    const isOpen = expanded[id] ?? true;
+    return (
+      <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+        <button onClick={() => toggleSection(id)} className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50/80 transition-colors">
+          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+          <span className="text-gray-400">{isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}</span>
+        </button>
+        {isOpen && <div className="px-6 pb-6 pt-0 space-y-4 border-t border-gray-100">{children}</div>}
+      </section>
+    );
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {error && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm">{error}</div>}
       {ok && <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm">Збережено</div>}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-bold mb-4">Головна (Hero)</h2>
+      <Section id="hero" title="Головна (Hero)">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Адреса" value={form.hero?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, address: v } }))} />
           <Field label="Години (коротко)" value={form.hero?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHours: v } }))} />
           <Field label="Години (повно)" value={form.hero?.workingHoursShort ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHoursShort: v } }))} />
         </div>
-      </section>
+      </Section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-bold mb-4">Про нас</h2>
-        <div className="space-y-4">
-          <Field label="Заголовок" value={form.about?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, title: v } }))} />
-          <Field label="Підзаголовок" value={form.about?.subtitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, subtitle: v } }))} />
-          <Field label="Вступ" value={form.about?.intro ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, intro: v } }))} multiline />
-          <Field label="Другий абзац" value={form.about?.paragraph2 ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, paragraph2: v } }))} multiline />
-          <Field label="Футер" value={form.about?.footer ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, footer: v } }))} />
-        </div>
-      </section>
+      <Section id="about" title="Про нас">
+        <Field label="Заголовок" value={form.about?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, title: v } }))} />
+        <Field label="Підзаголовок" value={form.about?.subtitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, subtitle: v } }))} />
+        <Field label="Вступ" value={form.about?.intro ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, intro: v } }))} multiline rows={4} hint="Абзаци через Enter" />
+        <Field label="Другий абзац" value={form.about?.paragraph2 ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, paragraph2: v } }))} multiline rows={4} hint="Абзаци через Enter" />
+        <Field label="Футер" value={form.about?.footer ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, footer: v } }))} />
+      </Section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-bold mb-4">Доставка та оплата</h2>
-        <div className="space-y-4">
-          <Field label="Заголовок сторінки" value={form.delivery?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, title: v } }))} />
-          <Field label="Заголовок «Доставка»" value={form.delivery?.deliveryTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryTitle: v } }))} />
-          <Field label="Текст доставки (рядки через Enter)" value={form.delivery?.deliveryText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryText: v } }))} multiline />
-          <Field label="Заголовок «Оплата»" value={form.delivery?.paymentTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentTitle: v } }))} />
-          <Field label="Текст оплати" value={form.delivery?.paymentText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentText: v } }))} multiline />
-          <Field label="Заголовок «Повернення»" value={form.delivery?.returnsTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsTitle: v } }))} />
-          <Field label="Текст повернення" value={form.delivery?.returnsText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsText: v } }))} multiline />
-        </div>
-      </section>
+      <Section id="delivery" title="Доставка та оплата">
+        <Field label="Заголовок сторінки" value={form.delivery?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, title: v } }))} />
+        <Field label="Заголовок «Доставка»" value={form.delivery?.deliveryTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryTitle: v } }))} />
+        <Field label="Текст доставки" value={form.delivery?.deliveryText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryText: v } }))} multiline rows={8} hint="Абзаци через Enter" />
+        <Field label="Заголовок «Оплата»" value={form.delivery?.paymentTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentTitle: v } }))} />
+        <Field label="Текст оплати" value={form.delivery?.paymentText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentText: v } }))} multiline rows={6} hint="Абзаци через Enter" />
+        <Field label="Заголовок «Повернення»" value={form.delivery?.returnsTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsTitle: v } }))} />
+        <Field label="Текст повернення" value={form.delivery?.returnsText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsText: v } }))} multiline rows={6} hint="Абзаци через Enter" />
+      </Section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-bold mb-4">Контакти</h2>
+      <Section id="contacts" title="Контакти">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Заголовок" value={form.contacts?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, title: v } }))} />
           <Field label="Адреса" value={form.contacts?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, address: v } }))} />
@@ -668,26 +687,63 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
           <Field label="Телефон" value={form.contacts?.phone ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, phone: v } }))} />
           <Field label="Email" value={form.contacts?.email ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, email: v } }))} />
         </div>
-      </section>
+      </Section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-bold mb-4">Журнал (Editorial)</h2>
-        <div className="space-y-4">
-          <Field label="Заголовок" value={form.editorial?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, title: v } }))} />
-          <Field label="Текст посилання" value={form.editorial?.linkText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, linkText: v } }))} />
+      <Section id="editorial" title="Журнал (Editorial)">
+        <Field label="Заголовок" value={form.editorial?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, title: v } }))} />
+        <Field label="Текст посилання" value={form.editorial?.linkText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, linkText: v } }))} />
+        <div className="pt-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Статті</h3>
+          <div className="space-y-4">
+            {(form.editorial?.articles ?? []).map((art, i) => (
+              <div key={art.id} className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-gray-500">Стаття {i + 1}</span>
+                </div>
+                <Field label="Назва" value={art.title} onChange={v => setForm((p: typeof form) => ({
+                  ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, title: v } : a) }
+                }))} />
+                <Field label="Категорія" value={art.category} onChange={v => setForm((p: typeof form) => ({
+                  ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, category: v } : a) }
+                }))} />
+                <Field label="Опис" value={art.description} onChange={v => setForm((p: typeof form) => ({
+                  ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, description: v } : a) }
+                }))} multiline rows={3} />
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+      </Section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-bold mb-4">Відгуки</h2>
-        <div className="space-y-4">
-          <Field label="Заголовок" value={form.reviews?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, title: v } }))} />
+      <Section id="reviews" title="Відгуки">
+        <Field label="Заголовок" value={form.reviews?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, title: v } }))} />
+        <div className="pt-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Огляди</h3>
+          <div className="space-y-4">
+            {(form.reviews?.items ?? []).map((item, i) => (
+              <div key={item.id} className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-gray-500">Відгук {i + 1}</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Імʼя" value={item.name} onChange={v => setForm((p: typeof form) => ({
+                    ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, name: v } : it) }
+                  }))} />
+                  <Field label="Дата" value={item.date} onChange={v => setForm((p: typeof form) => ({
+                    ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, date: v } : it) }
+                  }))} />
+                </div>
+                <Field label="Текст відгуку" value={item.text} onChange={v => setForm((p: typeof form) => ({
+                  ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, text: v } : it) }
+                }))} multiline rows={4} />
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Редагування окремих відгуків — у майбутньому.</p>
-      </section>
+      </Section>
 
-      <div className="flex justify-end">
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50">
+      <div className="flex justify-end pt-2">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50 hover:bg-gray-800 transition-colors">
           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
           Зберегти розділи
         </button>
