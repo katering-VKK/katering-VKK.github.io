@@ -2,8 +2,12 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Truck, CreditCard, Package, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSiteContent } from '../context/SiteContentContext';
 
-export const DeliveryPayment = () => (
+export const DeliveryPayment = () => {
+  const { content } = useSiteContent();
+  const d = content.delivery ?? {};
+  return (
   <motion.article
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -16,7 +20,7 @@ export const DeliveryPayment = () => (
       </Link>
 
       <h1 className="text-4xl font-display font-extrabold uppercase tracking-tight mb-12">
-        Доставка та оплата
+        {d.title ?? 'Доставка та оплата'}
       </h1>
 
       <div className="space-y-12">
@@ -25,13 +29,20 @@ export const DeliveryPayment = () => (
             <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center">
               <Truck className="w-6 h-6 text-violet-600" />
             </div>
-            <h2 className="text-xl font-bold">Доставка</h2>
+            <h2 className="text-xl font-bold">{d.deliveryTitle ?? 'Доставка'}</h2>
           </div>
           <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
-            <p><strong>Самовивіз</strong> — безкоштовно з магазину за адресою: м. Ірпінь, вул. Григорія Сковороди 11/7. Режим роботи: щодня з 09:00 до 18:00.</p>
-            <p><strong>Доставка по Ірпеню</strong> — від 50 ₴. Мінімальне замовлення для доставки — 200 ₴.</p>
-            <p><strong>Нова Пошта</strong> — відправлення протягом 1–2 робочих днів. Вартість за тарифами перевізника.</p>
-            <p><strong>Укрпошта</strong> — за тарифами перевізника. Термін доставки — 3–7 днів.</p>
+            {(d.deliveryText ?? '').split('\n\n').filter(Boolean).map((para, i) => (
+              <p key={i}>{para.split('\n').map((line, j) => {
+                const idx = line.indexOf('—');
+                if (idx > 0) {
+                  const bold = line.slice(0, idx).trim();
+                  const rest = line.slice(idx + 1).trim();
+                  return <span key={j}><strong>{bold}</strong> — {rest} </span>;
+                }
+                return <span key={j}>{line}</span>;
+              })}</p>
+            ))}
           </div>
         </section>
 
@@ -40,12 +51,20 @@ export const DeliveryPayment = () => (
             <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center">
               <CreditCard className="w-6 h-6 text-emerald-600" />
             </div>
-            <h2 className="text-xl font-bold">Оплата</h2>
+            <h2 className="text-xl font-bold">{d.paymentTitle ?? 'Оплата'}</h2>
           </div>
           <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
-            <p><strong>Готівка</strong> — при самовивозі або доставці кур'єром.</p>
-            <p><strong>Картка</strong> — Visa, Mastercard при отриманні або онлайн.</p>
-            <p><strong>Оплата при отриманні</strong> — для доставки Нова Пошта та Укрпошта.</p>
+            {(d.paymentText ?? '').split('\n\n').filter(Boolean).map((para, i) => (
+              <p key={i}>{para.split('\n').map((line, j) => {
+                const idx = line.indexOf('—');
+                if (idx > 0) {
+                  const bold = line.slice(0, idx).trim();
+                  const rest = line.slice(idx + 1).trim();
+                  return <span key={j}><strong>{bold}</strong> — {rest} </span>;
+                }
+                return <span key={j}>{line}</span>;
+              })}</p>
+            ))}
           </div>
         </section>
 
@@ -54,14 +73,16 @@ export const DeliveryPayment = () => (
             <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center">
               <Package className="w-6 h-6 text-amber-600" />
             </div>
-            <h2 className="text-xl font-bold">Повернення</h2>
+            <h2 className="text-xl font-bold">{d.returnsTitle ?? 'Повернення'}</h2>
           </div>
           <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
-            <p>Товар належної якості можна повернути протягом 14 днів з моменту отримання. Товар має зберегти товарний вигляд та упаковку.</p>
-            <p>При поверненні через Нова Пошта — вартість пересилки оплачує клієнт.</p>
+            {(d.returnsText ?? '').split('\n\n').filter(Boolean).map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
           </div>
         </section>
       </div>
     </div>
   </motion.article>
-);
+  );
+};

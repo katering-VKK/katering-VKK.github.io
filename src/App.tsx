@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { StoreProvider } from './store';
 import { ProductsProvider } from './context/ProductsContext';
+import { SiteContentProvider } from './context/SiteContentContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
@@ -15,36 +16,48 @@ import { About } from './pages/About';
 import { Contacts } from './pages/Contacts';
 import { NotFound } from './pages/NotFound';
 import { Admin } from './pages/Admin';
+import { AdminErrorBoundary } from './components/AdminErrorBoundary';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 
-export default function App() {
+function AppContent() {
+  const loc = useLocation();
+  const isAdmin = loc.pathname === '/admin';
+
   return (
-    <StoreProvider>
-      <ProductsProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <div className="font-sans text-[var(--color-bobo-black)] bg-white antialiased overflow-x-hidden min-w-0">
-          <Navbar />
-          <main>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/delivery" element={<DeliveryPayment />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </main>
-          <Footer />
+    <div className="font-sans text-[var(--color-bobo-black)] bg-white antialiased overflow-x-hidden min-w-0">
+      {!isAdmin && <Navbar />}
+      <main className={isAdmin ? '' : ''}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/delivery" element={<DeliveryPayment />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/admin" element={<AdminErrorBoundary><Admin /></AdminErrorBoundary>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      {!isAdmin && <Footer />}
           <CartDrawer />
           <FavoritesDrawer />
           <SearchOverlay />
           <ProductQuickView />
           <Toast />
           <ScrollToTopButton />
-        </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <StoreProvider>
+      <ProductsProvider>
+      <SiteContentProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <AppContent />
       </BrowserRouter>
+      </SiteContentProvider>
       </ProductsProvider>
     </StoreProvider>
   );

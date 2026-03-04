@@ -33,7 +33,7 @@ echo "4. Products (PUT)"
 PRODUCTS=$(curl -s -X PUT "$BASE/api/admin/products" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d "{\"products\":[{\"id\":1,\"name\":\"Test\",\"price\":\"100 ₴\",\"category\":\"Книги\",\"tag\":\"\"}],\"token\":\"$TOKEN\"}")
+  -d '{"products":[{"id":1,"name":"Test","price":"100 ₴","category":"Книги","tag":""},{"id":2,"name":"Тест іграшка","price":"200 ₴","category":"Іграшки","tag":"New"}],"token":"'$TOKEN'"}')
 echo "$PRODUCTS"
 if echo "$PRODUCTS" | grep -q '"ok":true'; then echo "   ✓ OK"; else echo "   ✗ FAIL"; exit 1; fi
 echo ""

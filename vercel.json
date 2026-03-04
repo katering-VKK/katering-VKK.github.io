@@ -12,6 +12,9 @@
     },
     "api/admin/products.js": {
       "maxDuration": 30
+    },
+    "api/admin/site-content.js": {
+      "maxDuration": 30
     }
   }
 }

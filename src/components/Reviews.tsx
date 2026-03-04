@@ -1,37 +1,23 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Star, Quote } from 'lucide-react';
+import { useSiteContent } from '../context/SiteContentContext';
 
-const reviews = [
-  {
-    id: 1,
-    name: 'Олена К.',
-    rating: 5,
-    text: 'Чудовий магазин! Книги якісні, дочка в захваті від енциклопедії про космос. Швидка доставка по Ірпеню.',
-    date: 'Березень 2025',
-  },
-  {
-    id: 2,
-    name: 'Андрій М.',
-    rating: 5,
-    text: 'Замовляли конструктор та пазли — все прийшло швидко, упаковано акуратно. Діти грають щодня.',
-    date: 'Лютий 2025',
-  },
-  {
-    id: 3,
-    name: 'Марія Т.',
-    rating: 5,
-    text: 'Рекомендую! Великий вибір книг для дошкільнят, приємні ціни. Обов\'язково повернемось.',
-    date: 'Січень 2025',
-  },
+const defaultReviews = [
+  { id: 1, name: 'Олена К.', rating: 5, text: 'Чудовий магазин! Книги якісні, дочка в захваті від енциклопедії про космос. Швидка доставка по Ірпеню.', date: 'Березень 2025' },
+  { id: 2, name: 'Андрій М.', rating: 5, text: 'Замовляли конструктор та пазли — все прийшло швидко, упаковано акуратно. Діти грають щодня.', date: 'Лютий 2025' },
+  { id: 3, name: 'Марія Т.', rating: 5, text: "Рекомендую! Великий вибір книг для дошкільнят, приємні ціни. Обов'язково повернемось.", date: 'Січень 2025' },
 ];
 
 export const Reviews = () => {
+  const { content } = useSiteContent();
+  const rev = content.reviews ?? {};
+  const reviews = rev.items ?? defaultReviews;
   return (
     <section id="reviews" className="py-24 bg-white">
       <div className="container mx-auto px-6 lg:px-12">
         <h2 className="text-4xl md:text-5xl font-display font-extrabold uppercase tracking-tight mb-16">
-          Наші огляди
+          {rev.title ?? 'Наші огляди'}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

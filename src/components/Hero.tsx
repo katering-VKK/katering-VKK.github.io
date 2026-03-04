@@ -2,9 +2,12 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Star, Clock } from 'lucide-react';
 import { useStore } from '../store';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export const Hero = () => {
   const { navigateToCategory } = useStore();
+  const { content } = useSiteContent();
+  const hero = content.hero ?? {};
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -93,16 +96,16 @@ export const Hero = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
             </span>
-            <p className="font-medium tracking-wide text-sm sm:text-base">м. Ірпінь, вул. Григорія Сковороди 11/7</p>
+            <p className="font-medium tracking-wide text-sm sm:text-base">{hero.address ?? 'м. Ірпінь, вул. Григорія Сковороди 11/7'}</p>
             <span className="w-px h-4 bg-white/20 mx-2 hidden sm:block"></span>
             <div className="hidden sm:flex items-center gap-2 text-sm text-gray-300">
               <Clock className="w-3.5 h-3.5" />
-              <p>09:00 - 18:00</p>
+              <p>{hero.workingHours ?? '09:00 - 18:00'}</p>
             </div>
           </div>
           <div className="sm:hidden flex items-center gap-2 text-xs text-gray-300 bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
             <Clock className="w-3 h-3" />
-            <p>Щодня з 09:00 до 18:00</p>
+            <p>{hero.workingHoursShort ?? 'Щодня з 09:00 до 18:00'}</p>
           </div>
         </motion.div>
       </div>

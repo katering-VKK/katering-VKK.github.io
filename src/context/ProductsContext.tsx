@@ -45,7 +45,10 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   }, [fetchProducts]);
 
   useEffect(() => {
-    const onFocus = () => fetchProducts();
+    const onFocus = () => {
+      if (window.location.pathname === '/admin') return;
+      fetchProducts();
+    };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [fetchProducts]);

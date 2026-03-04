@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5 } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
+import { useSiteContent } from '../context/SiteContentContext';
 import { useStore } from '../store';
 import { getProductGradient } from '../data/products';
 import type { Product } from '../data/products';
@@ -56,7 +57,9 @@ export const Admin = () => {
   const [saveError, setSaveError] = useState('');
   const [uploadTest, setUploadTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; msg?: string }>({ status: 'idle' });
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  const [adminTab, setAdminTab] = useState<'products' | 'sections'>('products');
   const skipSyncRef = useRef(false);
+  const hasLocalChangesRef = useRef(false);
 
   const testUpload = async () => {
     if (!auth?.token || !API_URL) return;
@@ -85,7 +88,9 @@ export const Admin = () => {
       skipSyncRef.current = false;
       return;
     }
-    setLocalProducts(products);
+    if (hasLocalChangesRef.current) return;
+    const list = Array.isArray(products) ? products : [];
+    setLocalProducts(list);
   }, [products]);
 
   useEffect(() => {
@@ -132,11 +137,13 @@ export const Admin = () => {
   };
 
   const handleSaveProduct = (updated: Product) => {
+    hasLocalChangesRef.current = true;
     setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
     setEditing(null);
   };
 
   const handleAddProduct = (category: string) => {
+    hasLocalChangesRef.current = true;
     const maxId = localProducts.reduce((m, p) => Math.max(m, p.id), 0);
     const newProduct: Product = {
       id: maxId + 1,
@@ -152,12 +159,14 @@ export const Admin = () => {
   const handleDeleteProduct = (id: number, name?: string) => {
     const label = name ? `«${name.length > 40 ? name.slice(0, 40) + '…' : name}»` : 'цей товар';
     if (confirm(`Видалити товар ${label}? Цю дію не можна скасувати.`)) {
+      hasLocalChangesRef.current = true;
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
   };
 
   const handleSaveAll = async () => {
+    if (saving) return;
     setSaveError('');
     setSaving(true);
     try {
@@ -264,6 +273,7 @@ export const Admin = () => {
         });
         setLocalProducts(merged);
         skipSyncRef.current = true;
+        hasLocalChangesRef.current = false;
         if (strippedCount === 0) setSaveError('');
         await refetch();
         showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото не завантажилось — перевірте помилку вище` : 'Збережено в GitHub');
@@ -281,7 +291,7 @@ export const Admin = () => {
 
   if (!API_URL) {
     return (
-      <div className="min-h-screen pt-28 px-6 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-12 px-6 flex flex-col items-center justify-center">
         <p className="text-gray-500">Адмін-панель не налаштована (відсутній API)</p>
         <Link to="/" className="mt-4 text-violet-600 hover:underline">На головну</Link>
       </div>
@@ -290,17 +300,20 @@ export const Admin = () => {
 
   if (!auth) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen pt-28 px-6 flex flex-col items-center justify-center"
-      >
+      <div className="min-h-screen pt-12 px-6 flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-white">
         <div className="w-full max-w-sm">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black mb-8">
+            <ExternalLink className="w-4 h-4" />
+            На головну
+          </Link>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-violet-600" />
+            <div className="w-14 h-14 rounded-2xl bg-violet-100 flex items-center justify-center shadow-sm">
+              <Lock className="w-7 h-7 text-violet-600" />
             </div>
-            <h1 className="text-2xl font-bold">Вхід в адмін-панель</h1>
+            <div>
+              <h1 className="text-2xl font-bold">Адмін-панель</h1>
+              <p className="text-sm text-gray-500">Редагування товарів</p>
+            </div>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -337,41 +350,61 @@ export const Admin = () => {
             </p>
           )}
           <p className="mt-4 text-xs text-gray-400 text-center">
-            Пароль — це <code className="bg-gray-100 px-1 rounded">ADMIN_TOKEN</code> з Vercel → Settings → Environment Variables
+            Пароль = <code className="bg-gray-100 px-1.5 py-0.5 rounded">ADMIN_TOKEN</code> з Vercel
           </p>
-          <Link to="/" className="block mt-6 text-center text-sm text-gray-500 hover:text-black">
-            На головну
-          </Link>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
+  const { content: siteContent, refetch: refetchSiteContent } = useSiteContent();
+  const productsList = Array.isArray(products) ? products : [];
+  const totalProducts = localProducts.length;
+  const hasUnsaved = useMemo(() => {
+    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, image: p.image })));
+    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, image: p.image })));
+    return orig !== curr;
+  }, [productsList, localProducts]);
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen pt-28 pb-20 px-6"
-    >
+    <div className="min-h-screen pt-8 pb-12 px-6">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-12">
-          <h1 className="text-2xl font-bold">Редагування товарів</h1>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm text-gray-500 hover:text-black"
-            >
-              <LogOut className="w-4 h-4" />
-              Вийти
-            </button>
-            <button
-              onClick={handleSaveAll}
-              disabled={saving}
-              className="flex items-center gap-2 bg-black text-white px-6 py-2.5 rounded-xl font-bold text-sm disabled:opacity-70"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Зберегти в GitHub
-            </button>
+        <div className="sticky top-0 z-10 -mx-6 px-6 py-4 mb-8 bg-white/95 backdrop-blur-md border-b border-gray-100">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+                <button onClick={() => setAdminTab('products')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${adminTab === 'products' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  Товари
+                </button>
+                <button onClick={() => setAdminTab('sections')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'sections' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  <FileText className="w-4 h-4" />
+                  Розділи сайту
+                </button>
+              </div>
+              {adminTab === 'products' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
+              {hasUnsaved && <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">Є зміни</span>}
+              {apiStatus === 'ok' && <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle className="w-3.5 h-3.5" /> API</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/" target="_blank" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-black px-3 py-2 rounded-lg hover:bg-gray-100">
+                <ExternalLink className="w-4 h-4" />
+                На сайт
+              </Link>
+              <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-gray-500 hover:text-black px-3 py-2 rounded-lg hover:bg-gray-100">
+                <LogOut className="w-4 h-4" />
+                Вийти
+              </button>
+              {adminTab === 'products' && (
+                <button
+                  onClick={handleSaveAll}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-gray-800 transition-colors"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Зберегти в GitHub
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -384,27 +417,40 @@ export const Admin = () => {
           </div>
         )}
         {uploadTest.status !== 'idle' && (
-          <div className={`mb-6 p-4 rounded-xl text-sm ${uploadTest.status === 'ok' ? 'bg-green-50 text-green-700' : uploadTest.status === 'fail' ? 'bg-amber-50 text-amber-800' : 'bg-gray-50 text-gray-600'}`}>
-            {uploadTest.status === 'testing' && 'Тест завантаження...'}
-            {uploadTest.status === 'ok' && uploadTest.msg}
-            {uploadTest.status === 'fail' && (
-              <span>
-                {uploadTest.msg}. <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">API health</a>
-              </span>
-            )}
+          <div className={`mb-6 p-4 rounded-xl text-sm flex items-center justify-between ${uploadTest.status === 'ok' ? 'bg-green-50 text-green-700' : uploadTest.status === 'fail' ? 'bg-amber-50 text-amber-800' : 'bg-gray-50 text-gray-600'}`}>
+            <span>{uploadTest.status === 'testing' ? 'Тест завантаження...' : uploadTest.status === 'ok' ? uploadTest.msg : <>{uploadTest.msg}. <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">API health</a></>}</span>
             {uploadTest.status !== 'testing' && (
-              <button onClick={() => setUploadTest({ status: 'idle' })} className="ml-2 text-xs underline">Закрити</button>
+              <button onClick={() => setUploadTest({ status: 'idle' })} className="text-xs underline shrink-0">Закрити</button>
             )}
           </div>
         )}
-        <div className="mb-6 flex gap-2">
-          <button onClick={testUpload} disabled={uploadTest.status === 'testing'} className="text-sm text-gray-500 hover:text-black underline disabled:opacity-50">
-            Тест завантаження фото
-          </button>
-        </div>
+        {adminTab === 'products' && (
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <button onClick={testUpload} disabled={uploadTest.status === 'testing'} className="text-sm text-gray-500 hover:text-black underline disabled:opacity-50">
+              Тест завантаження фото
+            </button>
+          </div>
+        )}
 
-        {loading ? (
-          <div className="py-20 text-center text-gray-400">Завантаження...</div>
+        {adminTab === 'sections' ? (
+          <SiteContentEditor
+            content={siteContent}
+            onSave={refetchSiteContent}
+            apiUrl={API_URL}
+            authToken={auth?.token ?? ''}
+            onUnauthorized={handleLogout}
+          />
+        ) : loading ? (
+          <div className="py-16 space-y-4">
+            <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-12 bg-gray-100 rounded-xl animate-pulse max-w-[75%]" />
+            <div className="h-12 bg-gray-100 rounded-xl animate-pulse max-w-[50%]" />
+            <div className="grid gap-3 mt-8">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-20 bg-gray-50 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          </div>
         ) : (
           <AdminSections
             localProducts={localProducts}
@@ -428,9 +474,145 @@ export const Admin = () => {
         />
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
+
+const TAG_PRESETS = ['Хіт продажу', 'New', 'Розмальовки', 'Наліпки', 'Подарунковий набір', ''];
+
+function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized }: {
+  content: import('../context/SiteContentContext').SiteContent;
+  onSave: () => void;
+  apiUrl: string;
+  authToken: string;
+  onUnauthorized?: () => void;
+}) {
+  const [form, setForm] = useState(() => JSON.parse(JSON.stringify(content)));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [ok, setOk] = useState(false);
+  const prevContentRef = useRef<string>('');
+
+  useEffect(() => {
+    const key = JSON.stringify(content);
+    if (prevContentRef.current !== key) {
+      prevContentRef.current = key;
+      setForm(JSON.parse(JSON.stringify(content)));
+    }
+  }, [content]);
+
+  const handleSave = async () => {
+    if (saving) return;
+    setError('');
+    setSaving(true);
+    const token = authToken.trim();
+    try {
+      const res = await fetch(`${apiUrl}/admin/site-content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ content: form, token }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        setOk(true);
+        onSave();
+        setTimeout(() => setOk(false), 3000);
+      } else {
+        if (res.status === 401) onUnauthorized?.();
+        setError(data.error || `HTTP ${res.status}`);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Field = ({ label, value, onChange, multiline }: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) => (
+    <div>
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</label>
+      {multiline ? (
+        <textarea value={value} onChange={e => onChange(e.target.value)} rows={4} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 outline-none text-sm" />
+      ) : (
+        <input value={value} onChange={e => onChange(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 outline-none text-sm" />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-8">
+      {error && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm">{error}</div>}
+      {ok && <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm">Збережено</div>}
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-bold mb-4">Головна (Hero)</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Адреса" value={form.hero?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, address: v } }))} />
+          <Field label="Години (коротко)" value={form.hero?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHours: v } }))} />
+          <Field label="Години (повно)" value={form.hero?.workingHoursShort ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHoursShort: v } }))} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-bold mb-4">Про нас</h2>
+        <div className="space-y-4">
+          <Field label="Заголовок" value={form.about?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, title: v } }))} />
+          <Field label="Підзаголовок" value={form.about?.subtitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, subtitle: v } }))} />
+          <Field label="Вступ" value={form.about?.intro ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, intro: v } }))} multiline />
+          <Field label="Другий абзац" value={form.about?.paragraph2 ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, paragraph2: v } }))} multiline />
+          <Field label="Футер" value={form.about?.footer ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, footer: v } }))} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-bold mb-4">Доставка та оплата</h2>
+        <div className="space-y-4">
+          <Field label="Заголовок сторінки" value={form.delivery?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, title: v } }))} />
+          <Field label="Заголовок «Доставка»" value={form.delivery?.deliveryTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryTitle: v } }))} />
+          <Field label="Текст доставки (рядки через Enter)" value={form.delivery?.deliveryText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryText: v } }))} multiline />
+          <Field label="Заголовок «Оплата»" value={form.delivery?.paymentTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentTitle: v } }))} />
+          <Field label="Текст оплати" value={form.delivery?.paymentText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentText: v } }))} multiline />
+          <Field label="Заголовок «Повернення»" value={form.delivery?.returnsTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsTitle: v } }))} />
+          <Field label="Текст повернення" value={form.delivery?.returnsText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsText: v } }))} multiline />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-bold mb-4">Контакти</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Заголовок" value={form.contacts?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, title: v } }))} />
+          <Field label="Адреса" value={form.contacts?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, address: v } }))} />
+          <Field label="Режим роботи" value={form.contacts?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, workingHours: v } }))} />
+          <Field label="Телефон" value={form.contacts?.phone ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, phone: v } }))} />
+          <Field label="Email" value={form.contacts?.email ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, email: v } }))} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-bold mb-4">Журнал (Editorial)</h2>
+        <div className="space-y-4">
+          <Field label="Заголовок" value={form.editorial?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, title: v } }))} />
+          <Field label="Текст посилання" value={form.editorial?.linkText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, linkText: v } }))} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-bold mb-4">Відгуки</h2>
+        <div className="space-y-4">
+          <Field label="Заголовок" value={form.reviews?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, title: v } }))} />
+        </div>
+        <p className="text-sm text-gray-500 mt-2">Редагування окремих відгуків — у майбутньому.</p>
+      </section>
+
+      <div className="flex justify-end">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50">
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+          Зберегти розділи
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function AdminSections({
   localProducts,
@@ -448,12 +630,14 @@ function AdminSections({
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(ADMIN_CATEGORIES.map(c => [c, true]))
   );
-
+  const [search, setSearch] = useState('');
 
   const byCategory = useMemo(() => {
     const map: Record<string, Product[]> = {};
+    const q = search.trim().toLowerCase();
     for (const c of ADMIN_CATEGORIES) map[c] = [];
     for (const p of localProducts) {
+      if (q && !p.name.toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q)) continue;
       if (map[p.category]) map[p.category].push(p);
       else (map['Інше'] = map['Інше'] ?? []).push(p);
     }
@@ -461,7 +645,7 @@ function AdminSections({
       map[c] = [...map[c]].sort((a, b) => a.id - b.id);
     }
     return map;
-  }, [localProducts]);
+  }, [localProducts, search]);
 
   const toggle = (cat: string) => setExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
 
@@ -471,8 +655,28 @@ function AdminSections({
     return list;
   }, [byCategory]);
 
+  const totalFiltered = useMemo(() => catsToShow.reduce((s, c) => s + (byCategory[c]?.length ?? 0), 0), [catsToShow, byCategory]);
+
   return (
     <div className="space-y-4">
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Пошук за назвою або тегом..."
+          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50/50"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+        {search && totalFiltered === 0 && (
+          <p className="absolute left-0 right-0 top-full mt-2 text-sm text-gray-500">Нічого не знайдено</p>
+        )}
+      </div>
       {catsToShow.map(cat => {
         const items = byCategory[cat] ?? [];
         const isOpen = expanded[cat] ?? true;
@@ -779,11 +983,23 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Тег</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {TAG_PRESETS.filter(Boolean).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setForm(p => ({ ...p, tag: p.tag === t ? '' : t }))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${form.tag === t ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
                 <input
                   value={form.tag}
                   onChange={e => setForm(p => ({ ...p, tag: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
-                  placeholder="Хіт продажу, New, Розмальовки..."
+                  placeholder="Або введі свій тег..."
                 />
               </div>
             </div>
@@ -795,16 +1011,19 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
           )}
           {validationError && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{validationError}</p>}
         </div>
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center gap-3">
-          <button
-            onClick={handleSave}
-            className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-xl font-semibold transition-colors"
-          >
-            Зберегти
-          </button>
-          <button onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors">
-            Скасувати
-          </button>
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+          <span className="text-xs text-gray-400 hidden sm:inline">Ctrl+Enter — зберегти</span>
+          <div className="flex gap-3 ml-auto">
+            <button onClick={onClose} className="px-6 py-3 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+              Скасувати
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex-1 min-w-[120px] bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-xl font-semibold transition-colors"
+            >
+              Зберегти
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

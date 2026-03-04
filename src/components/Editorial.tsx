@@ -1,40 +1,26 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { useSiteContent } from '../context/SiteContentContext';
 
-const articles = [
-  {
-    id: 1,
-    title: 'Анімована книга: Подорож до зірок',
-    category: 'Новинки',
-    description: 'Пориньте у світ SS26 з нашою анімованою книгою. Історія про маленького астронавта.',
-    gradient: 'linear-gradient(135deg, hsl(340, 75%, 60%) 0%, hsl(20, 85%, 65%) 100%)',
-  },
-  {
-    id: 2,
-    title: 'Колекція "Місячне Сяйво"',
-    category: 'Натхнення',
-    description: 'Колекція, що запрошує вас сповільнитися та відчути глибину космосу.',
-    gradient: 'linear-gradient(135deg, hsl(230, 70%, 55%) 0%, hsl(270, 65%, 70%) 100%)',
-  },
-  {
-    id: 3,
-    title: 'Космічні пригоди',
-    category: 'Для дітей',
-    description: 'Колекція, що святкує допитливість, щоденні відкриття та мистецтво гри.',
-    gradient: 'linear-gradient(135deg, hsl(160, 65%, 50%) 0%, hsl(190, 70%, 60%) 100%)',
-  }
+const defaultArticles = [
+  { id: 1, title: 'Анімована книга: Подорож до зірок', category: 'Новинки', description: 'Пориньте у світ SS26 з нашою анімованою книгою. Історія про маленького астронавта.', gradient: 'linear-gradient(135deg, hsl(340, 75%, 60%) 0%, hsl(20, 85%, 65%) 100%)' },
+  { id: 2, title: 'Колекція "Місячне Сяйво"', category: 'Натхнення', description: 'Колекція, що запрошує вас сповільнитися та відчути глибину космосу.', gradient: 'linear-gradient(135deg, hsl(230, 70%, 55%) 0%, hsl(270, 65%, 70%) 100%)' },
+  { id: 3, title: 'Космічні пригоди', category: 'Для дітей', description: 'Колекція, що святкує допитливість, щоденні відкриття та мистецтво гри.', gradient: 'linear-gradient(135deg, hsl(160, 65%, 50%) 0%, hsl(190, 70%, 60%) 100%)' },
 ];
 
 export const Editorial = () => {
+  const { content } = useSiteContent();
+  const ed = content.editorial ?? {};
+  const articles = ed.articles ?? defaultArticles;
   return (
     <section className="py-32 bg-[var(--color-bobo-cream)]">
       <div className="container mx-auto px-6 lg:px-12">
         <div className="flex justify-between items-end mb-16">
           <h2 className="text-4xl md:text-6xl font-display font-extrabold uppercase tracking-tight">
-            Журнал
+            {ed.title ?? 'Журнал'}
           </h2>
           <a href="#" className="hidden md:block text-sm font-bold uppercase tracking-widest border-b border-black pb-1 hover:text-gray-600 transition-colors">
-            Читати всі статті
+            {ed.linkText ?? 'Читати всі статті'}
           </a>
         </div>
 

@@ -1,4 +1,4 @@
-const PROD_ORIGIN = 'https://katering-VKK.github.io';
+const PROD_ORIGIN = 'https://lumu.com.ua';
 
 function getOrigin(): string {
   if (typeof window === 'undefined') return PROD_ORIGIN;

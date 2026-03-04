@@ -3,9 +3,12 @@ import { motion } from 'motion/react';
 import { MapPin, Clock, Phone, Mail, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export const Contacts = () => {
   const { navigateToCategory } = useStore();
+  const { content } = useSiteContent();
+  const c = content.contacts ?? {};
   const navigate = useNavigate();
 
   const goToCategory = (cat: string) => {
@@ -26,12 +29,12 @@ export const Contacts = () => {
         </Link>
 
         <h1 className="text-4xl font-display font-extrabold uppercase tracking-tight mb-12">
-          Контакти
+          {c.title ?? 'Контакти'}
         </h1>
 
         <div className="space-y-8">
           <a
-            href="https://maps.google.com/?q=Ірпінь+Григорія+Сковороди+11/7"
+            href={`https://maps.google.com/?q=${encodeURIComponent(c.address ?? 'Ірпінь Григорія Сковороди 11/7')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex gap-4 p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group"
@@ -41,7 +44,7 @@ export const Contacts = () => {
             </div>
             <div>
               <h3 className="font-bold mb-1">Адреса</h3>
-              <p className="text-gray-600">м. Ірпінь, вул. Григорія Сковороди 11/7</p>
+              <p className="text-gray-600">{c.address ?? 'м. Ірпінь, вул. Григорія Сковороди 11/7'}</p>
               <p className="text-sm text-violet-600 mt-2">Відкрити на карті →</p>
             </div>
           </a>
@@ -52,27 +55,27 @@ export const Contacts = () => {
             </div>
             <div>
               <h3 className="font-bold mb-1">Режим роботи</h3>
-              <p className="text-gray-600">Щодня з 09:00 до 18:00</p>
+              <p className="text-gray-600">{c.workingHours ?? 'Щодня з 09:00 до 18:00'}</p>
             </div>
           </div>
 
-          <a href="tel:+380991234567" className="flex gap-4 p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+          <a href={`tel:${(c.phone ?? '').replace(/\D/g, '')}`} className="flex gap-4 p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group">
             <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0 group-hover:bg-emerald-200 transition-colors">
               <Phone className="w-6 h-6 text-emerald-600" />
             </div>
             <div>
               <h3 className="font-bold mb-1">Телефон</h3>
-              <p className="text-gray-600">+38 (099) 123-45-67</p>
+              <p className="text-gray-600">{c.phone ?? '+38 (099) 123-45-67'}</p>
             </div>
           </a>
 
-          <a href="mailto:hello@mvsesvit.ua" className="flex gap-4 p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group">
+          <a href={`mailto:${c.email ?? 'hello@mvsesvit.ua'}`} className="flex gap-4 p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group">
             <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-200 transition-colors">
               <Mail className="w-6 h-6 text-blue-600" />
             </div>
             <div>
               <h3 className="font-bold mb-1">Email</h3>
-              <p className="text-gray-600">hello@mvsesvit.ua</p>
+              <p className="text-gray-600">{c.email ?? 'hello@mvsesvit.ua'}</p>
             </div>
           </a>
         </div>
