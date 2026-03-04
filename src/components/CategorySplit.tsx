@@ -1,43 +1,33 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
 import { ArrowUpRight } from 'lucide-react';
 import { useStore } from '../store';
+import { useProducts } from '../context/ProductsContext';
 
-const categories = [
-  {
-    title: 'Книги',
-    description: 'Історії, що надихають',
-    gradient: 'linear-gradient(135deg, hsl(10, 80%, 65%) 0%, hsl(35, 90%, 70%) 100%)',
-    count: 55,
-  },
-  {
-    title: 'Іграшки',
-    description: 'Для розвитку та гри',
-    gradient: 'linear-gradient(135deg, hsl(210, 80%, 60%) 0%, hsl(240, 70%, 70%) 100%)',
-    count: 55,
-  },
-  {
-    title: 'Власне виробництво',
-    description: 'Зроблено з любовʼю',
-    gradient: 'linear-gradient(135deg, hsl(40, 70%, 65%) 0%, hsl(50, 60%, 75%) 100%)',
-    count: 35,
-  },
-  {
-    title: 'Творчість',
-    description: 'Розкрий свій талант',
-    gradient: 'linear-gradient(135deg, hsl(290, 70%, 65%) 0%, hsl(320, 75%, 70%) 100%)',
-    count: 30,
-  },
-  {
-    title: 'Настільні ігри',
-    description: 'Грайте разом',
-    gradient: 'linear-gradient(135deg, hsl(120, 60%, 55%) 0%, hsl(150, 65%, 65%) 100%)',
-    count: 25,
-  }
+const CATEGORY_CONFIG = [
+  { title: 'Книги', description: 'Історії, що надихають', gradient: 'linear-gradient(135deg, hsl(10, 80%, 65%) 0%, hsl(35, 90%, 70%) 100%)' },
+  { title: 'Іграшки', description: 'Для розвитку та гри', gradient: 'linear-gradient(135deg, hsl(210, 80%, 60%) 0%, hsl(240, 70%, 70%) 100%)' },
+  { title: 'Власне виробництво', description: 'Зроблено з любовʼю', gradient: 'linear-gradient(135deg, hsl(40, 70%, 65%) 0%, hsl(50, 60%, 75%) 100%)' },
+  { title: 'Творчість', description: 'Розкрий свій талант', gradient: 'linear-gradient(135deg, hsl(290, 70%, 65%) 0%, hsl(320, 75%, 70%) 100%)' },
+  { title: 'Настільні ігри', description: 'Грайте разом', gradient: 'linear-gradient(135deg, hsl(120, 60%, 55%) 0%, hsl(150, 65%, 65%) 100%)' },
 ];
 
 export const CategorySplit = () => {
   const { navigateToCategory } = useStore();
+  const { products } = useProducts();
+  const countsByCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const list = Array.isArray(products) ? products : [];
+    for (const p of list) {
+      const cat = String(p.category || '').trim() || 'Інше';
+      counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    return counts;
+  }, [products]);
+  const categories = useMemo(() =>
+    CATEGORY_CONFIG.map(c => ({ ...c, count: countsByCategory[c.title] ?? 0 })),
+    [countsByCategory]
+  );
 
   return (
     <section className="py-24 bg-[var(--color-bobo-cream)]">

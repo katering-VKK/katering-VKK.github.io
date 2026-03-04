@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -60,6 +60,7 @@ export const Admin = () => {
   const [adminTab, setAdminTab] = useState<'products' | 'sections'>('products');
   const skipSyncRef = useRef(false);
   const hasLocalChangesRef = useRef(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const testUpload = async () => {
     if (!auth?.token || !API_URL) return;
@@ -163,6 +164,73 @@ export const Admin = () => {
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
+  };
+
+  const handleExportProducts = () => {
+    const payload = localProducts.map(p => ({
+      id: Number(p.id),
+      name: String(p.name || '').trim(),
+      price: String(p.price || '').trim(),
+      category: String(p.category || 'Книги'),
+      tag: String(p.tag || '').trim(),
+      ...(p.image && { image: String(p.image) }),
+    }));
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Експортовано');
+  };
+
+  const handleImportProducts = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? '');
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) {
+          setSaveError('JSON має бути масивом товарів');
+          return;
+        }
+        const valid: Product[] = [];
+        const defaultCategory = 'Книги';
+        for (let i = 0; i < data.length; i++) {
+          const p = data[i];
+          if (p == null || typeof p !== 'object') continue;
+          const name = String(p.name ?? '').trim();
+          if (!name) continue;
+          const price = String(p.price ?? '').trim();
+          if (!price) continue;
+          const priceNum = parseInt(price.replace(/\s/g, '').replace('₴', ''), 10);
+          if (isNaN(priceNum) || priceNum < 0) continue;
+          valid.push({
+            id: Number(p.id) || i + 1,
+            name,
+            price,
+            category: String(p.category ?? defaultCategory).trim() || defaultCategory,
+            tag: String(p.tag ?? '').trim(),
+            ...(p.image && typeof p.image === 'string' && !p.image.startsWith('data:') && { image: p.image }),
+          });
+        }
+        if (valid.length === 0) {
+          setSaveError('У файлі немає валідних товарів');
+          return;
+        }
+        const withUniqueIds = valid.map((p, idx) => ({ ...p, id: idx + 1 }));
+        hasLocalChangesRef.current = true;
+        setLocalProducts(withUniqueIds);
+        showToast(`Завантажено ${withUniqueIds.length} товарів. Натисніть «Зберегти в GitHub».`);
+      } catch (err) {
+        setSaveError('Невірний JSON: ' + ((err as Error).message || 'помилка парсингу'));
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
   const handleSaveAll = async () => {
@@ -426,6 +494,15 @@ export const Admin = () => {
         )}
         {adminTab === 'products' && (
           <div className="mb-6 flex flex-wrap items-center gap-3">
+            <button onClick={handleExportProducts} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
+              <Download className="w-4 h-4" />
+              Вигрузити JSON
+            </button>
+            <label className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+              <Upload className="w-4 h-4" />
+              Завантажити JSON
+              <input ref={importInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleImportProducts} />
+            </label>
             <button onClick={testUpload} disabled={uploadTest.status === 'testing'} className="text-sm text-gray-500 hover:text-black underline disabled:opacity-50">
               Тест завантаження фото
             </button>
