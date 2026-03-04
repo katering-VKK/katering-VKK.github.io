@@ -6,5 +6,13 @@
     "category": "Книги",
     "tag": "",
     "image": "/images/products/1.jpg"
+  },
+  {
+    "id": 2,
+    "name": "Новий товар",
+    "price": "100 ₴",
+    "category": "Книги",
+    "tag": "",
+    "image": "/images/products/2.jpg"
   }
 ]
