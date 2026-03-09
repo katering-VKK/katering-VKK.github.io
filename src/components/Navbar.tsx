@@ -51,6 +51,8 @@ const navLinks: NavLinkDef[] = [
   { name: 'Власне виробництво', category: 'Власне виробництво' },
   { name: 'Творчість', category: 'Творчість' },
   { name: 'Настільні ігри', category: 'Настільні ігри' },
+  { name: 'Сезонні товари', category: 'Сезонні товари' },
+  { name: 'Акційні позиції', category: 'Акційні позиції' },
 ];
 
 export const Navbar = () => {

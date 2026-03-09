@@ -25,6 +25,8 @@ export const ProductGrid = () => {
   const filteredProducts = useMemo(() => {
     let list = products.filter(product => {
       if (activeCategory === 'Хіт продажу') return product.tag === 'Хіт продажу';
+      if (activeCategory === 'Сезонні товари') return product.tag === 'Сезонні';
+      if (activeCategory === 'Акційні позиції') return product.tag === 'Акція';
       const catMatch = activeCategory === 'Всі' || product.category === activeCategory;
       const tagMatch = !activeTag || product.tag === activeTag;
       return catMatch && tagMatch;

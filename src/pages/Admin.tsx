@@ -149,20 +149,26 @@ export const Admin = () => {
   const handleSaveProduct = (updated: Product) => {
     hasLocalChangesRef.current = true;
     setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setNewProductIds(prev => { const s = new Set(prev); s.delete(updated.id); return s; });
     setEditing(null);
   };
+
+  const [newProductIds, setNewProductIds] = useState<Set<number>>(new Set());
 
   const handleAddProduct = (category: string) => {
     hasLocalChangesRef.current = true;
     const maxId = localProducts.reduce((m, p) => Math.max(m, p.id), 0);
+    const newId = maxId + 1;
     const newProduct: Product = {
-      id: maxId + 1,
+      id: newId,
       name: 'Новий товар',
       price: '100 ₴',
       category,
       tag: '',
+      description: '',
     };
     setLocalProducts(prev => [...prev, newProduct]);
+    setNewProductIds(prev => new Set(prev).add(newId));
     setEditing(newProduct);
   };
 
@@ -170,6 +176,7 @@ export const Admin = () => {
     const label = name ? `«${name.length > 40 ? name.slice(0, 40) + '…' : name}»` : 'цей товар';
     if (confirm(`Видалити товар ${label}? Цю дію не можна скасувати.`)) {
       hasLocalChangesRef.current = true;
+      setNewProductIds(prev => { const s = new Set(prev); s.delete(id); return s; });
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
@@ -358,6 +365,7 @@ export const Admin = () => {
           return p;
         });
         setLocalProducts(merged);
+        setNewProductIds(new Set());
         skipSyncRef.current = true;
         hasLocalChangesRef.current = false;
         if (strippedCount === 0) setSaveError('');
@@ -550,6 +558,7 @@ export const Admin = () => {
           <AdminSections
             localProducts={localProducts}
             imagePreviews={imagePreviews}
+            newProductIds={newProductIds}
             onEdit={setEditing}
             onDelete={handleDeleteProduct}
             onAdd={handleAddProduct}
@@ -581,7 +590,7 @@ export const Admin = () => {
   );
 };
 
-const TAG_PRESETS = ['Хіт продажу', 'New', 'Розмальовки', 'Наліпки', 'Подарунковий набір', ''];
+const TAG_PRESETS = ['Хіт продажу', 'Сезонні', 'Акція', 'New', 'Розмальовки', 'Наліпки', 'Подарунковий набір', ''];
 
 const fieldClass = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-400 outline-none text-base leading-relaxed transition-colors';
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
@@ -717,6 +726,8 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
       <AdminSection id="categories" title="Описи категорій" isOpen={expanded.categories ?? true} onToggle={() => toggleSection('categories')}>
         <AdminField label="Опис «Іграшки»" value={form.categories?.toys ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, toys: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
         <AdminField label="Опис «Власне виробництво»" value={form.categories?.ownProduction ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, ownProduction: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+        <AdminField label="Опис «Сезонні товари»" value={form.categories?.seasonal ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, seasonal: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+        <AdminField label="Опис «Акційні позиції»" value={form.categories?.promo ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, promo: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
       </AdminSection>
 
       <AdminSection id="editorial" title="Журнал (Editorial)" isOpen={expanded.editorial ?? true} onToggle={() => toggleSection('editorial')}>
@@ -785,6 +796,7 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
 function AdminSections({
   localProducts,
   imagePreviews = {},
+  newProductIds = new Set(),
   onEdit,
   onDelete,
   onAdd,
@@ -792,6 +804,7 @@ function AdminSections({
 }: {
   localProducts: Product[];
   imagePreviews?: Record<number, string>;
+  newProductIds?: Set<number>;
   onEdit: (p: Product) => void;
   onDelete: (id: number, name?: string) => void;
   onAdd: (category: string) => void;
@@ -904,21 +917,31 @@ function AdminSections({
                       </div>
                     ) : (
                       <div className="grid gap-3">
+                        <AnimatePresence mode="popLayout">
                         {items.map(product => {
                           const productForDisplay = imagePreviews[product.id] ? { ...product, image: imagePreviews[product.id] } : product;
+                          const isNew = newProductIds.has(product.id);
                           return (
-                          <div
+                          <motion.div
                             key={product.id}
-                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors"
+                            layout
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors min-h-[88px]"
                           >
-                            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm">
+                            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm aspect-square">
                               <ProductImage product={productForDisplay} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">{product.name}</p>
-                              <p className="text-sm text-gray-500">{product.tag || '—'} · {product.price}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                                {isNew && <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 rounded-full">Новий</span>}
+                              </div>
+                              <p className="text-sm text-gray-500 truncate">{product.tag || '—'} · {product.price}</p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               <button
                                 onClick={() => onEdit(product)}
                                 className="p-2.5 hover:bg-violet-100 text-violet-600 rounded-xl transition-colors"
@@ -934,9 +957,10 @@ function AdminSections({
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
-                          </div>
+                          </motion.div>
                           );
                         })}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>
@@ -978,7 +1002,11 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, onFormChan
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onEsc);
-    return () => window.removeEventListener('keydown', onEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onEsc);
+      document.body.style.overflow = '';
+    };
   }, [onClose]);
 
   const resizeAndEncode = (file: File, maxW = 400, maxH = 400, quality = 0.65): Promise<string> => {
@@ -1097,7 +1125,7 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, onFormChan
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

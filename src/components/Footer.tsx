@@ -74,8 +74,8 @@ export const Footer = () => {
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              {['Книги', 'Іграшки', 'Творчість', 'Настільні ігри', 'Власне виробництво'].map(cat => {
-                const desc = cat === 'Іграшки' ? content.categories?.toys?.trim() : cat === 'Власне виробництво' ? content.categories?.ownProduction?.trim() : null;
+              {['Книги', 'Іграшки', 'Творчість', 'Настільні ігри', 'Власне виробництво', 'Сезонні товари', 'Акційні позиції'].map(cat => {
+                const desc = cat === 'Іграшки' ? content.categories?.toys?.trim() : cat === 'Власне виробництво' ? content.categories?.ownProduction?.trim() : cat === 'Сезонні товари' ? content.categories?.seasonal?.trim() : cat === 'Акційні позиції' ? content.categories?.promo?.trim() : null;
                 return (
                   <button
                     key={cat}
@@ -105,6 +105,8 @@ export const Footer = () => {
                   { label: 'Творчість', cat: 'Творчість', title: '' },
                   { label: 'Настільні ігри', cat: 'Настільні ігри', title: '' },
                   { label: 'Хіт продажу', cat: 'Хіт продажу', title: '' },
+                  { label: 'Сезонні товари', cat: 'Сезонні товари', title: content.categories?.seasonal?.trim() ?? '' },
+                  { label: 'Акційні позиції', cat: 'Акційні позиції', title: content.categories?.promo?.trim() ?? '' },
                 ].map(item => (
                   <button
                     key={item.label}

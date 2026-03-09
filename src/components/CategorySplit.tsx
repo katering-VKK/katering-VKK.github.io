@@ -11,6 +11,8 @@ const CATEGORY_CONFIG = [
   { title: 'Власне виробництво', description: 'Зроблено з любовʼю', gradient: 'linear-gradient(135deg, hsl(40, 70%, 65%) 0%, hsl(50, 60%, 75%) 100%)' },
   { title: 'Творчість', description: 'Розкрий свій талант', gradient: 'linear-gradient(135deg, hsl(290, 70%, 65%) 0%, hsl(320, 75%, 70%) 100%)' },
   { title: 'Настільні ігри', description: 'Грайте разом', gradient: 'linear-gradient(135deg, hsl(120, 60%, 55%) 0%, hsl(150, 65%, 65%) 100%)' },
+  { title: 'Сезонні товари', description: 'Товари для пори року', gradient: 'linear-gradient(135deg, hsl(180, 70%, 50%) 0%, hsl(200, 75%, 60%) 100%)', tagFilter: 'Сезонні' },
+  { title: 'Акційні позиції', description: 'Знижки та спецпропозиції', gradient: 'linear-gradient(135deg, hsl(350, 80%, 55%) 0%, hsl(10, 90%, 65%) 100%)', tagFilter: 'Акція' },
 ];
 
 export const CategorySplit = () => {
@@ -24,12 +26,19 @@ export const CategorySplit = () => {
       const cat = String(p.category || '').trim() || 'Інше';
       counts[cat] = (counts[cat] ?? 0) + 1;
     }
-    return counts;
+    const tagCounts: Record<string, number> = {};
+    for (const p of list) {
+      if (p.tag === 'Сезонні') tagCounts['Сезонні товари'] = (tagCounts['Сезонні товари'] ?? 0) + 1;
+      if (p.tag === 'Акція') tagCounts['Акційні позиції'] = (tagCounts['Акційні позиції'] ?? 0) + 1;
+    }
+    return { ...counts, ...tagCounts };
   }, [products]);
   const categories = useMemo(() => {
     const fullDesc: Record<string, string> = {
       'Іграшки': content.categories?.toys?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Іграшки')!.description,
       'Власне виробництво': content.categories?.ownProduction?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Власне виробництво')!.description,
+      'Сезонні товари': content.categories?.seasonal?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Сезонні товари')!.description,
+      'Акційні позиції': content.categories?.promo?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Акційні позиції')!.description,
     };
     return CATEGORY_CONFIG.map(c => {
       const full = fullDesc[c.title] ?? c.description;
