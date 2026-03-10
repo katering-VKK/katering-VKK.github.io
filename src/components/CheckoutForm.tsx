@@ -27,7 +27,7 @@ const initialForm: FormData = {
   comment: '',
 };
 
-const TELEGRAM_API = (import.meta.env.VITE_TELEGRAM_API_URL || 'https://lumu-pearl.vercel.app/api').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
+const TELEGRAM_API = 'https://lumu-pearl.vercel.app/api';
 
 async function sendToTelegram(text: string): Promise<{ ok: boolean; error?: string }> {
   const endpoint = `${TELEGRAM_API}/telegram`;
