@@ -27,9 +27,10 @@ const initialForm: FormData = {
   comment: '',
 };
 
+const TELEGRAM_API = (import.meta.env.VITE_TELEGRAM_API_URL || 'https://lumu-pearl.vercel.app/api').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
+
 async function sendToTelegram(text: string): Promise<{ ok: boolean; error?: string }> {
-  const apiUrl = import.meta.env.VITE_TELEGRAM_API_URL;
-  const endpoint = apiUrl ? `${apiUrl.replace(/\/telegram\/?$/, '').replace(/\/$/, '')}/telegram` : '/api/telegram';
+  const endpoint = `${TELEGRAM_API}/telegram`;
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -40,7 +41,8 @@ async function sendToTelegram(text: string): Promise<{ ok: boolean; error?: stri
     const err = await res.text();
     return { ok: false, error: err || `HTTP ${res.status}` };
   } catch (e) {
-    return { ok: false, error: (e as Error).message || 'Помилка мережі' };
+    const msg = (e as Error).message || 'Помилка мережі';
+    return { ok: false, error: msg.includes('fetch') || msg.includes('Network') ? 'API недоступний. Перевірте VITE_TELEGRAM_API_URL в GitHub Secrets.' : msg };
   }
 }
 

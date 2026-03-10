@@ -8,7 +8,7 @@
 
 | Secret | Значення |
 |--------|----------|
-| `VITE_TELEGRAM_API_URL` | `https://lumu-api.vercel.app/api` |
+| `VITE_TELEGRAM_API_URL` | `https://lumu-pearl.vercel.app/api` |
 
 ⚠️ Без слеша в кінці. Після зміни — **Actions** → **Deploy to GitHub Pages** → **Re-run all jobs**.
 
@@ -27,12 +27,12 @@
 
 ```bash
 # Чи налаштовано API (GET)
-curl https://lumu-api.vercel.app/api/telegram
+curl https://lumu-pearl.vercel.app/api/telegram
 # {"configured":true,"hint":"OK"} — все ок
 # {"configured":false,"hint":"Add TELEGRAM_BOT_TOKEN..."} — додай змінні в Vercel
 
 # Тест відправки (POST)
-curl -X POST https://lumu-api.vercel.app/api/telegram \
+curl -X POST https://lumu-pearl.vercel.app/api/telegram \
   -H "Content-Type: application/json" \
   -d '{"text":"test"}'
 ```
