@@ -3,14 +3,19 @@ export default async function handler(req, res) {
   const allowed = ['https://malenkyivsesvit.com.ua', 'https://www.malenkyivsesvit.com.ua', 'https://katering-vkk.github.io'];
   if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
   res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://malenkyivsesvit.com.ua');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (req.method === 'GET') {
+    return res.status(200).json({ configured: !!(token && chatId), hint: token && chatId ? 'OK' : 'Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel' });
+  }
+
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   if (!token || !chatId) {
     return res.status(500).json({ error: 'Server not configured' });
