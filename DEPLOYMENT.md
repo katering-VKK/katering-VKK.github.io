@@ -17,6 +17,6 @@
 
 ## GitHub Pages
 
-Сайт: https://katering-VKK.github.io або https://lumu.com.ua (через CNAME)
+Сайт: https://katering-VKK.github.io або https://malenkyivsesvit.com.ua (через CNAME)
 
 Secret `VITE_TELEGRAM_API_URL` = `https://lumu-api.vercel.app/api`
