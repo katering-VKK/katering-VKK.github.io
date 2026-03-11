@@ -9,10 +9,18 @@ function formatPrice(n: number) {
   return n.toLocaleString('uk-UA') + ' ₴';
 }
 
+const DELIVERY_OPTIONS = [
+  { id: 'self', label: 'Самовивіз' },
+  { id: 'nova', label: 'Нова пошта' },
+  { id: 'ukr', label: 'Укрпошта' },
+  { id: 'region', label: 'Доставка по регіону' },
+] as const;
+
 interface FormData {
   name: string;
   phone: string;
   email: string;
+  delivery: string;
   city: string;
   address: string;
   comment: string;
@@ -22,12 +30,13 @@ const initialForm: FormData = {
   name: '',
   phone: '',
   email: '',
+  delivery: 'self',
   city: '',
   address: '',
   comment: '',
 };
 
-const TELEGRAM_API = 'https://lumu-pearl.vercel.app/api';
+const TELEGRAM_API = (import.meta.env.VITE_TELEGRAM_API_URL || 'https://lumu-pearl.vercel.app/api').replace(/\/$/, '');
 
 async function sendToTelegram(text: string): Promise<{ ok: boolean; error?: string }> {
   const endpoint = `${TELEGRAM_API}/telegram`;
@@ -73,7 +82,8 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
     if (!form.email.trim()) e.email = 'Введіть email';
     else if (!isValidEmail(form.email)) e.email = 'Невірний email';
     if (!form.city.trim()) e.city = 'Введіть місто';
-    if (!form.address.trim()) e.address = 'Введіть адресу';
+    const isSelfPickup = form.delivery === 'self';
+    if (!isSelfPickup && !form.address.trim()) e.address = 'Введіть адресу доставки';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -96,13 +106,15 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
       const tagPart = p.tag ? ` / ${escapeHtml(p.tag)}` : '';
       return `${i + 1}. ID:${p.id} | ${escapeHtml(p.name)} | ${p.category}${tagPart} | ${qty} шт. × ${p.price} = ${subtotal.toLocaleString('uk-UA')} ₴`;
     });
+    const deliveryLabel = DELIVERY_OPTIONS.find(d => d.id === form.delivery)?.label ?? form.delivery;
     const lines = [
       '🛒 <b>Нове замовлення</b>',
       '',
       `👤 ${escapeHtml(form.name.trim())}`,
       `📞 ${phone}`,
       `✉️ ${escapeHtml(form.email.trim())}`,
-      `📍 ${escapeHtml(form.city.trim())}, ${escapeHtml(form.address.trim())}`,
+      `🚚 <b>Доставка:</b> ${escapeHtml(deliveryLabel)}`,
+      form.delivery === 'self' ? `📍 ${escapeHtml(form.city.trim())}` : `📍 ${escapeHtml(form.city.trim())}, ${escapeHtml(form.address.trim())}`,
       form.comment.trim() ? `💬 ${escapeHtml(form.comment.trim())}` : '',
       '',
       '📦 <b>Товари:</b>',
@@ -163,6 +175,29 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
           {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
         </div>
         <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Спосіб доставки *</label>
+          <div className="grid grid-cols-2 gap-2">
+            {DELIVERY_OPTIONS.map(d => (
+              <label
+                key={d.id}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                  form.delivery === d.id ? 'border-black bg-black/5 ring-2 ring-black/20' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="delivery"
+                  value={d.id}
+                  checked={form.delivery === d.id}
+                  onChange={() => update('delivery', d.id)}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">{d.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Місто *</label>
           <input
             value={form.city}
@@ -173,12 +208,14 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
           {errors.city && <p className="text-xs text-red-500 mt-1">{errors.city}</p>}
         </div>
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Адреса доставки *</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+            {form.delivery === 'self' ? 'Адреса / примітка (опційно)' : 'Адреса доставки *'}
+          </label>
           <input
             value={form.address}
             onChange={e => update('address', e.target.value)}
             className={`w-full px-4 py-3 rounded-xl border ${errors.address ? 'border-red-300' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-black/20`}
-            placeholder="вул. Григорія Сковороди 11/7"
+            placeholder={form.delivery === 'self' ? 'Наприклад: зателефонуйте перед приїздом' : 'вул. Григорія Сковороди 11/7'}
           />
           {errors.address && <p className="text-xs text-red-500 mt-1">{errors.address}</p>}
         </div>

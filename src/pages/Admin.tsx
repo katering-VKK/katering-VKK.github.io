@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, Edit2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -369,7 +369,7 @@ export const Admin = () => {
         skipSyncRef.current = true;
         hasLocalChangesRef.current = false;
         if (strippedCount === 0) setSaveError('');
-        await refetch();
+        refetch().catch(() => {}); // оновлюємо контекст у фоні; skipSyncRef не дасть перезаписати localProducts
         showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото не завантажилось — перевірте помилку вище` : 'Збережено в GitHub');
       } else {
         if (res.status === 401) handleLogout();
@@ -723,23 +723,57 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
         </div>
       </AdminSection>
 
-      <AdminSection id="categories" title="Описи категорій" isOpen={expanded.categories ?? true} onToggle={() => toggleSection('categories')}>
-        <AdminField label="Опис «Іграшки»" value={form.categories?.toys ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, toys: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
-        <AdminField label="Опис «Власне виробництво»" value={form.categories?.ownProduction ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, ownProduction: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
-        <AdminField label="Опис «Сезонні товари»" value={form.categories?.seasonal ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, seasonal: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
-        <AdminField label="Опис «Акційні позиції»" value={form.categories?.promo ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, promo: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+      <AdminSection id="categories" title="Карточки категорій" isOpen={expanded.categories ?? true} onToggle={() => toggleSection('categories')}>
+        <p className="text-sm text-gray-500 mb-4">Описи та градієнти для карток категорій на головній сторінці.</p>
+        {[
+          { key: 'books', label: 'Книги' },
+          { key: 'toys', label: 'Іграшки' },
+          { key: 'ownProduction', label: 'Власне виробництво' },
+          { key: 'creativity', label: 'Творчість' },
+          { key: 'boardGames', label: 'Настільні ігри' },
+          { key: 'seasonal', label: 'Сезонні товари' },
+          { key: 'promo', label: 'Акційні позиції' },
+        ].map(({ key, label }) => (
+          <div key={key} className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 mb-4 space-y-3">
+            <h4 className="text-sm font-bold text-gray-700">{label}</h4>
+            <AdminField label="Опис" value={form.categories?.[key as keyof typeof form.categories] ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, [key]: v } }))} multiline rows={2} hint="До 300 символів" maxLength={300} />
+            <AdminField label="Градієнт" value={form.categoryGradients?.[label] ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categoryGradients: { ...p.categoryGradients, [label]: v } }))} hint="linear-gradient(135deg, hsl(...) 0%, hsl(...) 100%)" />
+          </div>
+        ))}
       </AdminSection>
 
       <AdminSection id="editorial" title="Журнал (Editorial)" isOpen={expanded.editorial ?? true} onToggle={() => toggleSection('editorial')}>
         <AdminField label="Заголовок" value={form.editorial?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, title: v } }))} />
         <AdminField label="Текст посилання" value={form.editorial?.linkText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, linkText: v } }))} />
         <div className="pt-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Статті</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold text-gray-700">Статті журналу</h3>
+            <button
+              type="button"
+              onClick={() => setForm((p: typeof form) => {
+                const arts = p.editorial?.articles ?? [];
+                const nextId = Math.max(0, ...arts.map((a: { id: number }) => a.id)) + 1;
+                return { ...p, editorial: { ...p.editorial, articles: [...arts, { id: nextId, title: 'Нова стаття', category: 'Новинки', description: '', gradient: 'linear-gradient(135deg, hsl(200, 70%, 55%) 0%, hsl(250, 65%, 65%) 100%)' }] } };
+              })}
+              className="flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-700"
+            >
+              <Plus className="w-4 h-4" />
+              Додати статтю
+            </button>
+          </div>
           <div className="space-y-4">
             {(form.editorial?.articles ?? []).map((art, i) => (
               <div key={art.id} className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium text-gray-500">Стаття {i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).filter((_, j) => j !== i) } }))}
+                    className="text-red-500 hover:text-red-600 p-1"
+                    title="Видалити"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
                 <AdminField label="Назва" value={art.title} onChange={v => setForm((p: typeof form) => ({
                   ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, title: v } : a) }
@@ -750,6 +784,9 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
                 <AdminField label="Опис" value={art.description} onChange={v => setForm((p: typeof form) => ({
                   ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, description: v } : a) }
                 }))} multiline rows={3} />
+                <AdminField label="Градієнт" value={art.gradient ?? ''} onChange={v => setForm((p: typeof form) => ({
+                  ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, gradient: v } : a) }
+                }))} hint="Наприклад: linear-gradient(135deg, hsl(340, 75%, 60%) 0%, hsl(20, 85%, 65%) 100%)" />
               </div>
             ))}
           </div>
@@ -759,12 +796,34 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
       <AdminSection id="reviews" title="Відгуки" isOpen={expanded.reviews ?? true} onToggle={() => toggleSection('reviews')}>
         <AdminField label="Заголовок" value={form.reviews?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, title: v } }))} />
         <div className="pt-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Огляди</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold text-gray-700">Карточки відгуків</h3>
+            <button
+              type="button"
+              onClick={() => setForm((p: typeof form) => {
+                const items = p.reviews?.items ?? [];
+                const nextId = Math.max(0, ...items.map((it: { id: number }) => it.id)) + 1;
+                return { ...p, reviews: { ...p.reviews, items: [...items, { id: nextId, name: 'Новий відгук', rating: 5, text: '', date: new Date().toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }) }] } };
+              })}
+              className="flex items-center gap-1.5 text-sm font-medium text-violet-600 hover:text-violet-700"
+            >
+              <Plus className="w-4 h-4" />
+              Додати відгук
+            </button>
+          </div>
           <div className="space-y-4">
             {(form.reviews?.items ?? []).map((item, i) => (
               <div key={item.id} className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium text-gray-500">Відгук {i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).filter((_, j) => j !== i) } }))}
+                    className="text-red-500 hover:text-red-600 p-1"
+                    title="Видалити"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <AdminField label="Імʼя" value={item.name} onChange={v => setForm((p: typeof form) => ({
@@ -773,6 +832,18 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
                   <AdminField label="Дата" value={item.date} onChange={v => setForm((p: typeof form) => ({
                     ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, date: v } : it) }
                   }))} />
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1.5">Рейтинг (1–5)</label>
+                    <select
+                      value={String(item.rating ?? 5)}
+                      onChange={e => setForm((p: typeof form) => ({
+                        ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, rating: parseInt(e.target.value, 10) || 5 } : it) }
+                      }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/20"
+                    >
+                      {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} ⭐</option>)}
+                    </select>
+                  </div>
                 </div>
                 <AdminField label="Текст відгуку" value={item.text} onChange={v => setForm((p: typeof form) => ({
                   ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, text: v } : it) }
@@ -929,34 +1000,27 @@ function AdminSections({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.15 }}
-                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors min-h-[88px]"
+                            onDoubleClick={() => onEdit(product)}
+                            className="flex items-center gap-3 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors min-h-[88px] cursor-pointer group"
+                            title="Подвійний клік — редагувати"
                           >
                             <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm aspect-square">
                               <ProductImage product={productForDisplay} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 overflow-hidden">
                               <div className="flex items-center gap-2">
                                 <p className="font-semibold text-gray-900 truncate">{product.name}</p>
                                 {isNew && <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 rounded-full">Новий</span>}
                               </div>
                               <p className="text-sm text-gray-500 truncate">{product.tag || '—'} · {product.price}</p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                onClick={() => onEdit(product)}
-                                className="p-2.5 hover:bg-violet-100 text-violet-600 rounded-xl transition-colors"
-                                title="Редагувати"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => onDelete(product.id, product.name)}
-                                className="p-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
-                                title="Видалити"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
+                            <button
+                              onClick={e => { e.stopPropagation(); onDelete(product.id, product.name); }}
+                              className="shrink-0 p-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                              title="Видалити"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </motion.div>
                           );
                         })}
