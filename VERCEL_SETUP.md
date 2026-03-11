@@ -14,6 +14,8 @@
    - `GITHUB_TOKEN` = ваш токен
    - `TELEGRAM_BOT_TOKEN` = токен бота
    - `TELEGRAM_CHAT_ID` = 871897952
+
+Замовлення також надсилаються на ID 1068223508 та 6840676016 (дубль).
 5. **Deploy**
 6. Скопіюйте URL (наприклад `lumu-api-xxx.vercel.app`)
 7. **GitHub** → Settings → Secrets → `VITE_TELEGRAM_API_URL` = `https://ваш-url.vercel.app/api`

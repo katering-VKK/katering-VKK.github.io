@@ -63,9 +63,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Missing base64 or productId' });
   }
 
-  const safeExt = (String(ext).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg').slice(0, 4);
+  const safeProductId = String(productId).replace(/[^0-9]/g, '') || '0';
+  if (safeProductId === '0') {
+    return res.status(400).json({ ok: false, error: 'Invalid productId' });
+  }
+  const raw = (String(ext).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg').slice(0, 5);
+  const extMap = { jpeg: 'jpg', jpg: 'jpg', png: 'png', gif: 'gif', webp: 'webp', avif: 'avif' };
+  const safeExt = extMap[raw] || 'jpg';
   const repo = process.env.GITHUB_REPO || 'katering-VKK/katering-VKK.github.io';
-  const filePath = `public/images/products/${productId}.${safeExt}`;
+  const filePath = `public/images/products/${safeProductId}.${safeExt}`;
 
   const rawBase64 = String(base64).replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
   let content;
@@ -112,7 +118,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: `Admin: фото товару ${productId}`,
+        message: `Admin: фото товару ${safeProductId}`,
         content,
         sha: sha,
       }),
@@ -130,7 +136,7 @@ export default async function handler(req, res) {
       return res.status(502).json({ ok: false, error: msg });
     }
 
-    const imageUrl = `/images/products/${productId}.${safeExt}`;
+    const imageUrl = `/images/products/${safeProductId}.${safeExt}`;
     return res.status(200).json({ ok: true, url: imageUrl });
   } catch (err) {
     return res.status(502).json({ ok: false, error: (err && err.message) || 'Failed' });

@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
   const allowed = [
-    'https://lumu.com.ua',
-    'https://www.lumu.com.ua',
+    'https://malenkyivsesvit.com.ua',
+    'https://www.malenkyivsesvit.com.ua',
     'https://katering-VKK.github.io',
     'https://katering-vkk.github.io',
     'http://localhost:3000',

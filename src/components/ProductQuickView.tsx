@@ -81,9 +81,12 @@ export const ProductQuickView = () => {
                 </button>
               </div>
               {product.tag && (
-                <span className="inline-flex self-start px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-700 mb-4">
+                <span className="inline-flex self-start px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-700 mb-3">
                   {product.tag}
                 </span>
+              )}
+              {product.description && (
+                <p className="text-sm text-gray-600 leading-relaxed mb-4">{product.description}</p>
               )}
               <p className="text-2xl font-bold text-gray-900 mb-4">{product.price}</p>
 

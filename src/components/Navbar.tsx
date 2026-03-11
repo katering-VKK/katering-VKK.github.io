@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Search, Heart, ShoppingBag, Menu, X, ChevronDown, Rocket, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
+import { useSiteContent } from '../context/SiteContentContext';
 
 interface SubcategoryDef {
   label: string;
@@ -50,10 +51,13 @@ const navLinks: NavLinkDef[] = [
   { name: 'Власне виробництво', category: 'Власне виробництво' },
   { name: 'Творчість', category: 'Творчість' },
   { name: 'Настільні ігри', category: 'Настільні ігри' },
+  { name: 'Сезонні товари', category: 'Сезонні товари' },
+  { name: 'Акційні позиції', category: 'Акційні позиції' },
 ];
 
 export const Navbar = () => {
   const { cartCount, setCartOpen, favCount, setFavOpen, setSearchOpen, navigateToCategory, navigateToSubcategory } = useStore();
+  const { content } = useSiteContent();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -157,6 +161,14 @@ export const Navbar = () => {
                             {sub.label}
                           </button>
                         ))}
+                        {link.name === 'Іграшки' && content.categories?.toys?.trim() && (
+                          <>
+                            <div className="h-px bg-gray-100 my-1" />
+                            <p className="px-4 py-2 text-xs text-gray-500 leading-relaxed line-clamp-2" title={content.categories.toys}>
+                              {content.categories.toys}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -307,6 +319,11 @@ export const Navbar = () => {
                               {sub.label}
                             </button>
                           ))}
+                          {link.name === 'Іграшки' && content.categories?.toys?.trim() && (
+                            <p className="py-2 text-sm text-gray-400 leading-relaxed line-clamp-2 pl-5">
+                              {content.categories.toys}
+                            </p>
+                          )}
                         </div>
                       </motion.div>
                     )}

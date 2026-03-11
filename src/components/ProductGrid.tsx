@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Filter, ShoppingBag, Check, X, Heart, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProducts } from '../context/ProductsContext';
+import { useSiteContent } from '../context/SiteContentContext';
 import { categories, parsePrice } from '../data/products';
 import { useStore } from '../store';
 import { ProductImage } from './ProductImage';
@@ -11,6 +12,7 @@ type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
 export const ProductGrid = () => {
   const { products, loading } = useProducts();
+  const { content } = useSiteContent();
   const { activeCategory, setActiveCategory, activeTag, setActiveTag, addToCart, cart, toggleFavorite, isFavorite, setQuickViewProduct } = useStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [addedId, setAddedId] = useState<number | null>(null);
@@ -23,6 +25,8 @@ export const ProductGrid = () => {
   const filteredProducts = useMemo(() => {
     let list = products.filter(product => {
       if (activeCategory === 'Хіт продажу') return product.tag === 'Хіт продажу';
+      if (activeCategory === 'Сезонні товари') return product.tag === 'Сезонні';
+      if (activeCategory === 'Акційні позиції') return product.tag === 'Акція';
       const catMatch = activeCategory === 'Всі' || product.category === activeCategory;
       const tagMatch = !activeTag || product.tag === activeTag;
       return catMatch && tagMatch;
@@ -65,25 +69,29 @@ export const ProductGrid = () => {
   };
 
   return (
-    <section id="product-grid" className="py-24 px-4 sm:px-6 max-w-[1920px] mx-auto relative overflow-hidden min-h-screen bg-mesh">
-      <div className="absolute top-20 right-0 w-96 h-96 bg-violet-200/30 rounded-full blur-[100px] -z-10"></div>
-      <div className="absolute bottom-1/4 left-0 w-72 h-72 bg-amber-100/40 rounded-full blur-[80px] -z-10"></div>
+    <section id="product-grid" className="py-20 px-4 sm:px-6 max-w-[1920px] mx-auto relative overflow-hidden min-h-screen bg-white">
+      <div className="absolute top-20 right-0 w-64 h-64 bg-violet-100 rounded-full blur-3xl -z-10 opacity-40"></div>
 
-      <div className="flex flex-col md:flex-row justify-between items-end mb-14 gap-8">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
         <div>
-          <h2 className="text-5xl md:text-6xl font-display font-extrabold tracking-tight text-gray-900">Каталог</h2>
-          <p className="text-gray-500 text-base mt-3 font-medium">{filteredProducts.length} товарів</p>
+          <h2 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight uppercase text-gray-900">Каталог</h2>
+          <p className="text-gray-400 text-sm mt-2">{filteredProducts.length} товарів</p>
+          {(activeCategory === 'Іграшки' && content.categories?.toys?.trim()) || (activeCategory === 'Власне виробництво' && content.categories?.ownProduction?.trim()) ? (
+            <p className="text-gray-600 text-sm mt-3 max-w-2xl leading-relaxed">
+              {activeCategory === 'Іграшки' ? content.categories?.toys : content.categories?.ownProduction}
+            </p>
+          ) : null}
         </div>
         
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => handleCategoryChange(category)}
-              className={`px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 ${
+              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
                 activeCategory === category
-                  ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/20 scale-[1.02]'
-                  : 'bg-white/80 text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-100'
+                  ? 'bg-black text-white shadow-lg scale-105'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {category}
@@ -93,23 +101,23 @@ export const ProductGrid = () => {
       </div>
 
       {/* Sort */}
-      <div className="flex flex-wrap items-center gap-4 mb-10">
+      <div className="flex flex-wrap items-center gap-4 mb-8">
         <div className="flex items-center gap-2">
           <ArrowUpDown className="w-4 h-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">Сортування:</span>
+          <span className="text-sm text-gray-500">Сортування:</span>
         </div>
         <div className="flex flex-wrap gap-2">
           {[
             { value: 'default' as SortOption, label: 'За замовчуванням' },
-            { value: 'price-asc' as SortOption, label: 'Ціна ↑' },
-            { value: 'price-desc' as SortOption, label: 'Ціна ↓' },
+            { value: 'price-asc' as SortOption, label: 'Ціна: спочатку дешевші' },
+            { value: 'price-desc' as SortOption, label: 'Ціна: спочатку дорожчі' },
             { value: 'name' as SortOption, label: 'За назвою' },
           ].map(opt => (
             <button
               key={opt.value}
               onClick={() => setSortBy(opt.value)}
-              className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-                sortBy === opt.value ? 'bg-gray-900 text-white shadow-md' : 'bg-white/80 text-gray-600 hover:bg-gray-100 border border-gray-100'
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                sortBy === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {opt.label}
@@ -160,10 +168,10 @@ export const ProductGrid = () => {
               className="group cursor-pointer"
               onClick={() => setQuickViewProduct(product)}
             >
-              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-[var(--radius-card)] border border-gray-100 group-hover:border-violet-200/60 shadow-card group-hover:shadow-card-hover group-hover:-translate-y-3 transition-all duration-500">
+              <div className="relative aspect-[3/4] mb-4 overflow-hidden rounded-2xl border-2 border-gray-100 group-hover:border-violet-200 shadow-lg group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-500">
                 {product.tag && (
-                  <span className={`absolute top-3 left-3 text-[10px] font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full shadow-md ${
-                    product.tag === 'Хіт продажу' ? 'bg-amber-400 text-black' :
+                  <span className={`absolute top-3 left-3 text-xs font-bold px-3 py-1.5 uppercase tracking-wider z-10 rounded-full shadow-md ${
+                    product.tag === 'Хіт продажу' ? 'bg-[var(--color-bobo-yellow)] text-black' :
                     product.tag === 'New' ? 'bg-emerald-400 text-black' :
                     'bg-white/95 backdrop-blur-sm text-gray-800'
                   }`}>
@@ -203,13 +211,14 @@ export const ProductGrid = () => {
                   )}
                 </button>
               </div>
-              <div className="px-1 py-3">
-                <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider mb-1.5">{product.category}</p>
-                <h3 className="text-base font-bold mb-2 group-hover:text-violet-600 transition-colors leading-snug line-clamp-2">{product.name}</h3>
+              <div className="px-1 py-2">
+                <p className="text-xs font-medium text-violet-500 uppercase tracking-wider mb-1.5">{product.category}</p>
+                <h3 className="text-sm font-bold mb-1 group-hover:text-violet-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
+                {product.description && <p className="text-xs text-gray-500 line-clamp-2 mb-1">{product.description}</p>}
                 <div className="flex items-center justify-between">
-                  <p className="text-lg font-bold text-gray-900">{product.price}</p>
+                  <p className="text-base font-bold text-gray-900">{product.price}</p>
                   {isInCart(product.id) && (
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">В кошику</span>
+                    <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">В кошику</span>
                   )}
                 </div>
               </div>
@@ -253,7 +262,7 @@ export const ProductGrid = () => {
                   onClick={() => handlePageChange(page)}
                   className={`w-10 h-10 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center ${
                     currentPage === page
-                      ? 'bg-gray-900 text-white shadow-lg scale-110'
+                      ? 'bg-[var(--color-bobo-yellow)] text-black shadow-lg scale-110'
                       : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-black'
                   }`}
                 >

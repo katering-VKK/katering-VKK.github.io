@@ -72,14 +72,14 @@ export const FavoritesDrawer = () => {
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
-                          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
+                          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
                           <h4 className="text-sm font-bold leading-tight truncate">{product.name}</h4>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-bold">{product.price}</span>
                           <button
                             onClick={() => { addToCart(product); setFavOpen(false); }}
-                            className="flex items-center gap-1.5 bg-black text-white px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors"
+                            className="flex items-center gap-1.5 bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors"
                           >
                             <ShoppingBag className="w-3 h-3" />
                             В кошик

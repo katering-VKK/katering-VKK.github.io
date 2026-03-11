@@ -61,6 +61,7 @@ export const Admin = () => {
   const skipSyncRef = useRef(false);
   const hasLocalChangesRef = useRef(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreviews, setImagePreviews] = useState<Record<number, string>>({});
 
   const testUpload = async () => {
     if (!auth?.token || !API_URL) return;
@@ -96,17 +97,25 @@ export const Admin = () => {
 
   useEffect(() => {
     if (!API_URL) return;
-    fetch(`${API_URL}/admin/health`)
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    fetch(`${API_URL}/admin/health`, { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => {
-        setApiStatus(d.configured ? 'ok' : 'no-token');
-        setUploadOk(!!d.uploadOk);
+        setApiStatus(d?.configured ? 'ok' : 'no-token');
+        setUploadOk(!!d?.uploadOk);
       })
-      .catch(() => setApiStatus('error'));
+      .catch(() => setApiStatus('error'))
+      .finally(() => clearTimeout(t));
+    return () => { ctrl.abort(); clearTimeout(t); };
   }, [API_URL]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!password.trim()) {
+      setLoginError('Введіть пароль');
+      return;
+    }
     setLoginError('');
     setLoginLoading(true);
     try {
@@ -140,20 +149,26 @@ export const Admin = () => {
   const handleSaveProduct = (updated: Product) => {
     hasLocalChangesRef.current = true;
     setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setNewProductIds(prev => { const s = new Set(prev); s.delete(updated.id); return s; });
     setEditing(null);
   };
+
+  const [newProductIds, setNewProductIds] = useState<Set<number>>(new Set());
 
   const handleAddProduct = (category: string) => {
     hasLocalChangesRef.current = true;
     const maxId = localProducts.reduce((m, p) => Math.max(m, p.id), 0);
+    const newId = maxId + 1;
     const newProduct: Product = {
-      id: maxId + 1,
+      id: newId,
       name: 'Новий товар',
       price: '100 ₴',
       category,
       tag: '',
+      description: '',
     };
     setLocalProducts(prev => [...prev, newProduct]);
+    setNewProductIds(prev => new Set(prev).add(newId));
     setEditing(newProduct);
   };
 
@@ -161,6 +176,7 @@ export const Admin = () => {
     const label = name ? `«${name.length > 40 ? name.slice(0, 40) + '…' : name}»` : 'цей товар';
     if (confirm(`Видалити товар ${label}? Цю дію не можна скасувати.`)) {
       hasLocalChangesRef.current = true;
+      setNewProductIds(prev => { const s = new Set(prev); s.delete(id); return s; });
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
@@ -173,6 +189,7 @@ export const Admin = () => {
       price: String(p.price || '').trim(),
       category: String(p.category || 'Книги'),
       tag: String(p.tag || '').trim(),
+      ...(p.description && { description: String(p.description).trim() }),
       ...(p.image && { image: String(p.image) }),
     }));
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -190,6 +207,7 @@ export const Admin = () => {
     e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
+    reader.onerror = () => setSaveError('Не вдалося прочитати файл');
     reader.onload = () => {
       try {
         const text = String(reader.result ?? '');
@@ -215,6 +233,7 @@ export const Admin = () => {
             price,
             category: String(p.category ?? defaultCategory).trim() || defaultCategory,
             tag: String(p.tag ?? '').trim(),
+            ...(p.description && typeof p.description === 'string' && { description: String(p.description).trim() }),
             ...(p.image && typeof p.image === 'string' && !p.image.startsWith('data:') && { image: p.image }),
           });
         }
@@ -244,6 +263,7 @@ export const Admin = () => {
         price: String(p.price || '').trim(),
         category: String(p.category || 'Книги'),
         tag: String(p.tag || '').trim(),
+        ...(p.description && { description: String(p.description).trim() }),
         ...(p.image && { image: String(p.image) }),
       }));
       const failedUploadIds = new Set<number>();
@@ -345,6 +365,7 @@ export const Admin = () => {
           return p;
         });
         setLocalProducts(merged);
+        setNewProductIds(new Set());
         skipSyncRef.current = true;
         hasLocalChangesRef.current = false;
         if (strippedCount === 0) setSaveError('');
@@ -434,8 +455,8 @@ export const Admin = () => {
   const productsList = Array.isArray(products) ? products : [];
   const totalProducts = localProducts.length;
   const hasUnsaved = useMemo(() => {
-    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, image: p.image })));
-    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, image: p.image })));
+    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, description: p.description, image: p.image })));
+    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, description: p.description, image: p.image })));
     return orig !== curr;
   }, [productsList, localProducts]);
 
@@ -536,6 +557,8 @@ export const Admin = () => {
         ) : (
           <AdminSections
             localProducts={localProducts}
+            imagePreviews={imagePreviews}
+            newProductIds={newProductIds}
             onEdit={setEditing}
             onDelete={handleDeleteProduct}
             onAdd={handleAddProduct}
@@ -547,9 +570,16 @@ export const Admin = () => {
       <AnimatePresence>
         {editing && (
         <ProductEditModal
+          key={editing.id}
           product={editing}
-          onSave={handleSaveProduct}
-          onClose={() => setEditing(null)}
+          onSave={(p) => { setImagePreviews(prev => { const next = { ...prev }; delete next[p.id]; return next; }); handleSaveProduct(p); }}
+          onClose={() => { if (editing) setImagePreviews(prev => { const next = { ...prev }; delete next[editing.id]; return next; }); setEditing(null); }}
+          onFormChange={(updated) => {
+            hasLocalChangesRef.current = true;
+            setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+            setEditing(updated);
+          }}
+          onImagePreview={(productId, dataUrl) => setImagePreviews(prev => dataUrl ? { ...prev, [productId]: dataUrl } : (() => { const next = { ...prev }; delete next[productId]; return next; })())}
           onUnauthorized={handleLogout}
           apiUrl={API_URL}
           authToken={auth?.token ?? ''}
@@ -560,7 +590,44 @@ export const Admin = () => {
   );
 };
 
-const TAG_PRESETS = ['Хіт продажу', 'New', 'Розмальовки', 'Наліпки', 'Подарунковий набір', ''];
+const TAG_PRESETS = ['Хіт продажу', 'Сезонні', 'Акція', 'New', 'Розмальовки', 'Наліпки', 'Подарунковий набір', ''];
+
+const fieldClass = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-400 outline-none text-base leading-relaxed transition-colors';
+const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
+
+function AdminField({ label, value, onChange, multiline, rows = 6, hint, maxLength }: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; rows?: number; hint?: string; maxLength?: number }) {
+  return (
+    <div className="space-y-1">
+      <label className={labelClass}>{label}</label>
+      {hint && <p className="text-xs text-gray-500 mb-1">{hint}</p>}
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          rows={rows}
+          maxLength={maxLength}
+          className={`${fieldClass} resize-y min-h-[120px]`}
+          placeholder="Введі текст..."
+        />
+      ) : (
+        <input value={value} onChange={e => onChange(e.target.value)} maxLength={maxLength} className={fieldClass} placeholder="Введі текст..." />
+      )}
+      {maxLength && <p className="text-xs text-gray-400 mt-1">{value.length}/{maxLength}</p>}
+    </div>
+  );
+}
+
+function AdminSection({ id, title, isOpen, onToggle, children }: { id: string; title: string; isOpen: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+      <button type="button" onClick={onToggle} className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50/80 transition-colors">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <span className="text-gray-400">{isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}</span>
+      </button>
+      {isOpen && <div className="px-6 pb-6 pt-0 space-y-4 border-t border-gray-100">{children}</div>}
+    </section>
+  );
+}
 
 function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized }: {
   content: import('../context/SiteContentContext').SiteContent;
@@ -611,87 +678,61 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
   };
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    hero: true, about: true, delivery: true, contacts: true, editorial: true, reviews: true,
+    hero: true, about: true, delivery: true, contacts: true, categories: true, editorial: true, reviews: true,
   });
   const toggleSection = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
-
-  const fieldClass = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-violet-400 outline-none text-base leading-relaxed transition-colors';
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
-  const Field = ({ label, value, onChange, multiline, rows = 6, hint }: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; rows?: number; hint?: string }) => (
-    <div className="space-y-1">
-      <label className={labelClass}>{label}</label>
-      {hint && <p className="text-xs text-gray-500 mb-1">{hint}</p>}
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          rows={rows}
-          className={`${fieldClass} resize-y min-h-[120px]`}
-          placeholder="Введі текст..."
-        />
-      ) : (
-        <input value={value} onChange={e => onChange(e.target.value)} className={fieldClass} placeholder="Введі текст..." />
-      )}
-    </div>
-  );
-
-  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => {
-    const isOpen = expanded[id] ?? true;
-    return (
-      <section className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-        <button onClick={() => toggleSection(id)} className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50/80 transition-colors">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-          <span className="text-gray-400">{isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}</span>
-        </button>
-        {isOpen && <div className="px-6 pb-6 pt-0 space-y-4 border-t border-gray-100">{children}</div>}
-      </section>
-    );
-  };
 
   return (
     <div className="space-y-6">
       {error && <div className="p-4 bg-red-50 text-red-700 rounded-xl text-sm">{error}</div>}
       {ok && <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm">Збережено</div>}
 
-      <Section id="hero" title="Головна (Hero)">
+      <AdminSection id="hero" title="Головна (Hero)" isOpen={expanded.hero ?? true} onToggle={() => toggleSection('hero')}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Адреса" value={form.hero?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, address: v } }))} />
-          <Field label="Години (коротко)" value={form.hero?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHours: v } }))} />
-          <Field label="Години (повно)" value={form.hero?.workingHoursShort ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHoursShort: v } }))} />
+          <AdminField label="Адреса" value={form.hero?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, address: v } }))} />
+          <AdminField label="Години (коротко)" value={form.hero?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHours: v } }))} />
+          <AdminField label="Години (повно)" value={form.hero?.workingHoursShort ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, hero: { ...p.hero, workingHoursShort: v } }))} />
         </div>
-      </Section>
+      </AdminSection>
 
-      <Section id="about" title="Про нас">
-        <Field label="Заголовок" value={form.about?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, title: v } }))} />
-        <Field label="Підзаголовок" value={form.about?.subtitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, subtitle: v } }))} />
-        <Field label="Вступ" value={form.about?.intro ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, intro: v } }))} multiline rows={4} hint="Абзаци через Enter" />
-        <Field label="Другий абзац" value={form.about?.paragraph2 ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, paragraph2: v } }))} multiline rows={4} hint="Абзаци через Enter" />
-        <Field label="Футер" value={form.about?.footer ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, footer: v } }))} />
-      </Section>
+      <AdminSection id="about" title="Про нас" isOpen={expanded.about ?? true} onToggle={() => toggleSection('about')}>
+        <AdminField label="Заголовок" value={form.about?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, title: v } }))} />
+        <AdminField label="Підзаголовок" value={form.about?.subtitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, subtitle: v } }))} />
+        <AdminField label="Вступ" value={form.about?.intro ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, intro: v } }))} multiline rows={4} hint="Абзаци через Enter" />
+        <AdminField label="Другий абзац" value={form.about?.paragraph2 ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, paragraph2: v } }))} multiline rows={4} hint="Абзаци через Enter" />
+        <AdminField label="Футер" value={form.about?.footer ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, about: { ...p.about, footer: v } }))} />
+      </AdminSection>
 
-      <Section id="delivery" title="Доставка та оплата">
-        <Field label="Заголовок сторінки" value={form.delivery?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, title: v } }))} />
-        <Field label="Заголовок «Доставка»" value={form.delivery?.deliveryTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryTitle: v } }))} />
-        <Field label="Текст доставки" value={form.delivery?.deliveryText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryText: v } }))} multiline rows={8} hint="Абзаци через Enter" />
-        <Field label="Заголовок «Оплата»" value={form.delivery?.paymentTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentTitle: v } }))} />
-        <Field label="Текст оплати" value={form.delivery?.paymentText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentText: v } }))} multiline rows={6} hint="Абзаци через Enter" />
-        <Field label="Заголовок «Повернення»" value={form.delivery?.returnsTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsTitle: v } }))} />
-        <Field label="Текст повернення" value={form.delivery?.returnsText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsText: v } }))} multiline rows={6} hint="Абзаци через Enter" />
-      </Section>
+      <AdminSection id="delivery" title="Доставка та оплата" isOpen={expanded.delivery ?? true} onToggle={() => toggleSection('delivery')}>
+        <AdminField label="Заголовок сторінки" value={form.delivery?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, title: v } }))} />
+        <AdminField label="Заголовок «Доставка»" value={form.delivery?.deliveryTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryTitle: v } }))} />
+        <AdminField label="Текст доставки" value={form.delivery?.deliveryText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, deliveryText: v } }))} multiline rows={8} hint="Абзаци через Enter" />
+        <AdminField label="Заголовок «Оплата»" value={form.delivery?.paymentTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentTitle: v } }))} />
+        <AdminField label="Текст оплати" value={form.delivery?.paymentText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, paymentText: v } }))} multiline rows={6} hint="Абзаци через Enter" />
+        <AdminField label="Заголовок «Повернення»" value={form.delivery?.returnsTitle ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsTitle: v } }))} />
+        <AdminField label="Текст повернення" value={form.delivery?.returnsText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, delivery: { ...p.delivery, returnsText: v } }))} multiline rows={6} hint="Абзаци через Enter" />
+      </AdminSection>
 
-      <Section id="contacts" title="Контакти">
+      <AdminSection id="contacts" title="Контакти" isOpen={expanded.contacts ?? true} onToggle={() => toggleSection('contacts')}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Заголовок" value={form.contacts?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, title: v } }))} />
-          <Field label="Адреса" value={form.contacts?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, address: v } }))} />
-          <Field label="Режим роботи" value={form.contacts?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, workingHours: v } }))} />
-          <Field label="Телефон" value={form.contacts?.phone ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, phone: v } }))} />
-          <Field label="Email" value={form.contacts?.email ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, email: v } }))} />
+          <AdminField label="Заголовок" value={form.contacts?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, title: v } }))} />
+          <AdminField label="Адреса" value={form.contacts?.address ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, address: v } }))} />
+          <AdminField label="Режим роботи" value={form.contacts?.workingHours ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, workingHours: v } }))} />
+          <AdminField label="Телефон" value={form.contacts?.phone ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, phone: v } }))} />
+          <AdminField label="Email" value={form.contacts?.email ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, contacts: { ...p.contacts, email: v } }))} />
         </div>
-      </Section>
+      </AdminSection>
 
-      <Section id="editorial" title="Журнал (Editorial)">
-        <Field label="Заголовок" value={form.editorial?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, title: v } }))} />
-        <Field label="Текст посилання" value={form.editorial?.linkText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, linkText: v } }))} />
+      <AdminSection id="categories" title="Описи категорій" isOpen={expanded.categories ?? true} onToggle={() => toggleSection('categories')}>
+        <AdminField label="Опис «Іграшки»" value={form.categories?.toys ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, toys: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+        <AdminField label="Опис «Власне виробництво»" value={form.categories?.ownProduction ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, ownProduction: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+        <AdminField label="Опис «Сезонні товари»" value={form.categories?.seasonal ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, seasonal: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+        <AdminField label="Опис «Акційні позиції»" value={form.categories?.promo ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, categories: { ...p.categories, promo: v } }))} multiline rows={4} hint="До 300 символів" maxLength={300} />
+      </AdminSection>
+
+      <AdminSection id="editorial" title="Журнал (Editorial)" isOpen={expanded.editorial ?? true} onToggle={() => toggleSection('editorial')}>
+        <AdminField label="Заголовок" value={form.editorial?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, title: v } }))} />
+        <AdminField label="Текст посилання" value={form.editorial?.linkText ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, editorial: { ...p.editorial, linkText: v } }))} />
         <div className="pt-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Статті</h3>
           <div className="space-y-4">
@@ -700,23 +741,23 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium text-gray-500">Стаття {i + 1}</span>
                 </div>
-                <Field label="Назва" value={art.title} onChange={v => setForm((p: typeof form) => ({
+                <AdminField label="Назва" value={art.title} onChange={v => setForm((p: typeof form) => ({
                   ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, title: v } : a) }
                 }))} />
-                <Field label="Категорія" value={art.category} onChange={v => setForm((p: typeof form) => ({
+                <AdminField label="Категорія" value={art.category} onChange={v => setForm((p: typeof form) => ({
                   ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, category: v } : a) }
                 }))} />
-                <Field label="Опис" value={art.description} onChange={v => setForm((p: typeof form) => ({
+                <AdminField label="Опис" value={art.description} onChange={v => setForm((p: typeof form) => ({
                   ...p, editorial: { ...p.editorial, articles: (p.editorial?.articles ?? []).map((a, j) => j === i ? { ...a, description: v } : a) }
                 }))} multiline rows={3} />
               </div>
             ))}
           </div>
         </div>
-      </Section>
+      </AdminSection>
 
-      <Section id="reviews" title="Відгуки">
-        <Field label="Заголовок" value={form.reviews?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, title: v } }))} />
+      <AdminSection id="reviews" title="Відгуки" isOpen={expanded.reviews ?? true} onToggle={() => toggleSection('reviews')}>
+        <AdminField label="Заголовок" value={form.reviews?.title ?? ''} onChange={v => setForm((p: typeof form) => ({ ...p, reviews: { ...p.reviews, title: v } }))} />
         <div className="pt-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Огляди</h3>
           <div className="space-y-4">
@@ -726,21 +767,21 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
                   <span className="text-xs font-medium text-gray-500">Відгук {i + 1}</span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Імʼя" value={item.name} onChange={v => setForm((p: typeof form) => ({
+                  <AdminField label="Імʼя" value={item.name} onChange={v => setForm((p: typeof form) => ({
                     ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, name: v } : it) }
                   }))} />
-                  <Field label="Дата" value={item.date} onChange={v => setForm((p: typeof form) => ({
+                  <AdminField label="Дата" value={item.date} onChange={v => setForm((p: typeof form) => ({
                     ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, date: v } : it) }
                   }))} />
                 </div>
-                <Field label="Текст відгуку" value={item.text} onChange={v => setForm((p: typeof form) => ({
+                <AdminField label="Текст відгуку" value={item.text} onChange={v => setForm((p: typeof form) => ({
                   ...p, reviews: { ...p.reviews, items: (p.reviews?.items ?? []).map((it, j) => j === i ? { ...it, text: v } : it) }
                 }))} multiline rows={4} />
               </div>
             ))}
           </div>
         </div>
-      </Section>
+      </AdminSection>
 
       <div className="flex justify-end pt-2">
         <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50 hover:bg-gray-800 transition-colors">
@@ -754,12 +795,16 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
 
 function AdminSections({
   localProducts,
+  imagePreviews = {},
+  newProductIds = new Set(),
   onEdit,
   onDelete,
   onAdd,
   getProductGradient,
 }: {
   localProducts: Product[];
+  imagePreviews?: Record<number, string>;
+  newProductIds?: Set<number>;
   onEdit: (p: Product) => void;
   onDelete: (id: number, name?: string) => void;
   onAdd: (category: string) => void;
@@ -775,8 +820,9 @@ function AdminSections({
     const q = search.trim().toLowerCase();
     for (const c of ADMIN_CATEGORIES) map[c] = [];
     for (const p of localProducts) {
-      if (q && !p.name.toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q)) continue;
-      if (map[p.category]) map[p.category].push(p);
+      if (q && !(p.name || '').toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q)) continue;
+      const cat = String(p.category || '').trim() || 'Інше';
+      if (map[cat]) map[cat].push(p);
       else (map['Інше'] = map['Інше'] ?? []).push(p);
     }
     for (const c of Object.keys(map)) {
@@ -871,19 +917,31 @@ function AdminSections({
                       </div>
                     ) : (
                       <div className="grid gap-3">
-                        {items.map(product => (
-                          <div
+                        <AnimatePresence mode="popLayout">
+                        {items.map(product => {
+                          const productForDisplay = imagePreviews[product.id] ? { ...product, image: imagePreviews[product.id] } : product;
+                          const isNew = newProductIds.has(product.id);
+                          return (
+                          <motion.div
                             key={product.id}
-                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors"
+                            layout
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="flex items-center gap-4 p-4 rounded-xl bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 transition-colors min-h-[88px]"
                           >
-                            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm">
-                              <ProductImage product={product} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
+                            <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden bg-white shadow-sm aspect-square">
+                              <ProductImage product={productForDisplay} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="xs" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">{product.name}</p>
-                              <p className="text-sm text-gray-500">{product.tag || '—'} · {product.price}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                                {isNew && <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 rounded-full">Новий</span>}
+                              </div>
+                              <p className="text-sm text-gray-500 truncate">{product.tag || '—'} · {product.price}</p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               <button
                                 onClick={() => onEdit(product)}
                                 className="p-2.5 hover:bg-violet-100 text-violet-600 rounded-xl transition-colors"
@@ -899,8 +957,10 @@ function AdminSections({
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
-                          </div>
-                        ))}
+                          </motion.div>
+                          );
+                        })}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>
@@ -914,11 +974,14 @@ function AdminSections({
   );
 }
 
-function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, authToken }: {
+function ProductEditModal({ product, onSave, onClose, onUnauthorized, onFormChange, onImagePreview, apiUrl, authToken }: {
   product: Product; onSave: (p: Product) => void; onClose: () => void; onUnauthorized?: () => void;
+  onFormChange?: (p: Product) => void;
+  onImagePreview?: (productId: number, dataUrl: string | null) => void;
   apiUrl: string; authToken: string;
 }) {
   const [form, setForm] = useState(product);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -926,6 +989,7 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
 
   useEffect(() => {
     setForm(product);
+    setPreviewDataUrl(null);
     setImgError('');
     setValidationError('');
   }, [product.id]);
@@ -938,7 +1002,11 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onEsc);
-    return () => window.removeEventListener('keydown', onEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onEsc);
+      document.body.style.overflow = '';
+    };
   }, [onClose]);
 
   const resizeAndEncode = (file: File, maxW = 400, maxH = 400, quality = 0.65): Promise<string> => {
@@ -995,20 +1063,36 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
         });
         const data = await res.json().catch(() => ({}));
         if (data.ok && data.url) {
-          setForm(p => ({ ...p, image: data.url }));
+          const updated = { ...form, image: data.url };
+          setForm(updated);
+          setPreviewDataUrl(dataUrl);
+          onFormChange?.(updated);
+          onImagePreview?.(product.id, dataUrl);
         } else {
-          setForm(p => ({ ...p, image: dataUrl }));
+          const updated = { ...form, image: dataUrl };
+          setForm(updated);
+          setPreviewDataUrl(null);
+          onFormChange?.(updated);
+          onImagePreview?.(product.id, dataUrl);
           if (res.status === 401) onUnauthorized?.();
           const errMsg = data.error || `HTTP ${res.status}`;
           setImgError(`Завантаження не вдалося: ${errMsg}. Фото збережено локально — натисніть «Зберегти в GitHub» для повторної спроби.`);
         }
       } else {
-        setForm(p => ({ ...p, image: dataUrl }));
+        const updated = { ...form, image: dataUrl };
+        setForm(updated);
+        setPreviewDataUrl(null);
+        onFormChange?.(updated);
+        onImagePreview?.(product.id, dataUrl);
       }
     } catch (err) {
       try {
         dataUrl = await resizeAndEncode(file);
-        setForm(p => ({ ...p, image: dataUrl }));
+        const updated = { ...form, image: dataUrl };
+        setForm(updated);
+        setPreviewDataUrl(null);
+        onFormChange?.(updated);
+        onImagePreview?.(product.id, dataUrl);
         setImgError('Фото збережено — натисніть «Зберегти в GitHub»');
       } catch {
         setImgError((err as Error).message || 'Помилка');
@@ -1041,7 +1125,7 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1064,10 +1148,16 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
             <div className="shrink-0">
               {form.image ? (
                 <div className="relative group">
-                  <img src={form.image ? (resolveImageUrl(form.image) || form.image) : ''} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
+                  <img src={previewDataUrl || (form.image.startsWith('data:') ? form.image : (resolveImageUrl(form.image) || form.image))} alt="" className="w-24 h-24 object-cover rounded-xl border-2 border-gray-100 shadow-sm" onError={(e) => { (e.target as HTMLImageElement).style.background = '#f3f4f6'; (e.target as HTMLImageElement).alt = '…'; }} />
                   <button
                     type="button"
-                    onClick={() => setForm(p => ({ ...p, image: undefined }))}
+                    onClick={() => {
+                      const updated = { ...form, image: undefined };
+                      setForm(updated);
+                      setPreviewDataUrl(null);
+                      onFormChange?.(updated);
+                      onImagePreview?.(product.id, null);
+                    }}
                     className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Видалити фото"
                   >
@@ -1118,6 +1208,18 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, apiUrl, au
                     ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Опис</label>
+                <textarea
+                  value={form.description ?? ''}
+                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  rows={3}
+                  maxLength={300}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none resize-y min-h-[80px]"
+                  placeholder="Короткий опис товару (до 300 символів)"
+                />
+                <p className="text-[10px] text-gray-400 mt-0.5">{(form.description ?? '').length}/300</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Тег</label>

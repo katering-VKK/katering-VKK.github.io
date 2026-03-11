@@ -4,6 +4,7 @@ export interface Product {
   price: string;
   category: string;
   tag: string;
+  description?: string;
   image?: string;
 }
 
@@ -272,4 +273,6 @@ export const categories = [
   'Творчість',
   'Настільні ігри',
   'Хіт продажу',
+  'Сезонні товари',
+  'Акційні позиції',
 ];

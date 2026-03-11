@@ -31,7 +31,7 @@ export const DeliveryPayment = () => {
             </div>
             <h2 className="text-xl font-bold">{d.deliveryTitle ?? 'Доставка'}</h2>
           </div>
-          <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
+          <div className="text-base text-gray-600 leading-relaxed space-y-4 [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-gray-800">
             {(d.deliveryText ?? '').split('\n\n').filter(Boolean).map((para, i) => (
               <p key={i}>{para.split('\n').map((line, j) => {
                 const idx = line.indexOf('—');
@@ -53,7 +53,7 @@ export const DeliveryPayment = () => {
             </div>
             <h2 className="text-xl font-bold">{d.paymentTitle ?? 'Оплата'}</h2>
           </div>
-          <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
+          <div className="text-base text-gray-600 leading-relaxed space-y-4 [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-gray-800">
             {(d.paymentText ?? '').split('\n\n').filter(Boolean).map((para, i) => (
               <p key={i}>{para.split('\n').map((line, j) => {
                 const idx = line.indexOf('—');
@@ -75,7 +75,7 @@ export const DeliveryPayment = () => {
             </div>
             <h2 className="text-xl font-bold">{d.returnsTitle ?? 'Повернення'}</h2>
           </div>
-          <div className="prose prose-gray max-w-none text-gray-600 leading-relaxed space-y-4">
+          <div className="text-base text-gray-600 leading-relaxed space-y-4 [&_p]:mb-4">
             {(d.returnsText ?? '').split('\n\n').filter(Boolean).map((para, i) => (
               <p key={i}>{para}</p>
             ))}

@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://lumu.com.ua', 'https://www.lumu.com.ua', 'https://katering-vkk.github.io'];
+  const allowed = ['https://malenkyivsesvit.com.ua', 'https://www.malenkyivsesvit.com.ua', 'https://katering-vkk.github.io', 'https://katering-VKK.github.io'];
   if (origin.includes('vercel.app') || origin.includes('github.io')) allowed.push(origin);
-  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://lumu.com.ua');
+  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : 'https://malenkyivsesvit.com.ua');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -16,6 +16,7 @@ export default async function handler(req, res) {
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
+  const chatIds = [chatId, 1068223508, 6840676016].filter(Boolean);
 
   if (!token || !chatId) {
     console.error('[telegram] Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID');
@@ -34,23 +35,21 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing text' });
   }
 
+  const sendPayload = { text, parse_mode: 'HTML' };
+
   try {
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: 'HTML',
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error('[telegram] API error:', response.status, err);
-      return res.status(502).json({ error: 'Telegram API error' });
+    for (const cid of chatIds) {
+      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: cid, ...sendPayload }),
+      });
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('[telegram] API error for chat', cid, response.status, err);
+        if (cid === chatId) return res.status(502).json({ error: 'Telegram API error' });
+      }
     }
-
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('[telegram] Fetch error:', err);

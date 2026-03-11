@@ -1,4 +1,4 @@
-const PROD_ORIGIN = 'https://lumu.com.ua';
+const PROD_ORIGIN = 'https://malenkyivsesvit.com.ua';
 
 function getOrigin(): string {
   if (typeof window === 'undefined') return PROD_ORIGIN;
