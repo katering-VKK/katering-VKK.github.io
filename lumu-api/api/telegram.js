@@ -15,9 +15,10 @@ export default async function handler(req, res) {
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
+  const chatIds = [chatId, 1068223508, 6840676016].filter(Boolean);
 
   if (req.method === 'GET') {
-    return res.status(200).json({ configured: !!(token && chatId), hint: token && chatId ? 'OK' : 'Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel' });
+    return res.status(200).json({ configured: !!(token && chatId), hint: token && chatId ? 'OK' : 'Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Vercel', recipients: chatIds.length });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -38,21 +39,24 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing text' });
   }
 
+  const sendPayload = { text, parse_mode: 'HTML' };
+
   try {
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: 'HTML',
-      }),
-    });
-    if (!response.ok) {
-      return res.status(502).json({ error: 'Telegram API error' });
+    for (const cid of chatIds) {
+      const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: cid, ...sendPayload }),
+      });
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('[telegram] API error for chat', cid, response.status, err);
+        if (cid === chatId) return res.status(502).json({ error: 'Telegram API error' });
+      }
     }
     return res.status(200).json({ ok: true });
   } catch (err) {
+    console.error('[telegram] Fetch error:', err);
     return res.status(502).json({ error: 'Failed to send' });
   }
 }
