@@ -4,7 +4,7 @@
  *
  * Використання:
  *   npx tsx scripts/import-products-from-xlsx.ts [шлях-до-xlsx]
- *   ADMIN_TOKEN=xxx API_URL=https://lumu-pearl.vercel.app/api npx tsx scripts/import-products-from-xlsx.ts --upload
+ *   ADMIN_TOKEN=пароль npx tsx scripts/import-products-from-xlsx.ts --upload
  */
 
 import { createRequire } from 'module';

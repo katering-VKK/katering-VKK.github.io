@@ -35,21 +35,27 @@ export const CategorySplit = () => {
   }, [products]);
   const categories = useMemo(() => {
     const fullDesc: Record<string, string> = {
+      'Книги': content.categories?.books?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Книги')!.description,
       'Іграшки': content.categories?.toys?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Іграшки')!.description,
       'Власне виробництво': content.categories?.ownProduction?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Власне виробництво')!.description,
+      'Творчість': content.categories?.creativity?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Творчість')!.description,
+      'Настільні ігри': content.categories?.boardGames?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Настільні ігри')!.description,
       'Сезонні товари': content.categories?.seasonal?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Сезонні товари')!.description,
       'Акційні позиції': content.categories?.promo?.trim() || CATEGORY_CONFIG.find(c => c.title === 'Акційні позиції')!.description,
     };
+    const gradients = content.categoryGradients ?? {};
     return CATEGORY_CONFIG.map(c => {
       const full = fullDesc[c.title] ?? c.description;
       const short = full.length > 60 ? full.slice(0, 57) + '…' : full;
+      const gradient = gradients[c.title]?.trim() || c.gradient;
       return {
         ...c,
         description: short,
+        gradient,
         count: countsByCategory[c.title] ?? 0,
       };
     });
-  }, [countsByCategory, content.categories]);
+  }, [countsByCategory, content.categories, content.categoryGradients]);
 
   return (
     <section className="py-24 bg-[var(--color-bobo-cream)]">

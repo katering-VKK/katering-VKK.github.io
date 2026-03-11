@@ -27,7 +27,11 @@ export interface SiteContent {
     ownProduction?: string;
     seasonal?: string;
     promo?: string;
+    books?: string;
+    creativity?: string;
+    boardGames?: string;
   };
+  categoryGradients?: Record<string, string>;
 }
 
 const DEFAULT: SiteContent = {
@@ -77,6 +81,18 @@ const DEFAULT: SiteContent = {
     ownProduction: 'Унікальні речі ручної роботи: деревʼяні іграшки, текстиль, декор, персоналізовані подарунки. Зроблено з любовʼю в Ірпені.',
     seasonal: 'Товари для пори року: сезонні новинки та особливі пропозиції.',
     promo: 'Знижки та спеціальні пропозиції. Акційні позиції з вигідними цінами.',
+    books: 'Історії, що надихають',
+    creativity: 'Розкрий свій талант',
+    boardGames: 'Грайте разом',
+  },
+  categoryGradients: {
+    'Книги': 'linear-gradient(135deg, hsl(10, 80%, 65%) 0%, hsl(35, 90%, 70%) 100%)',
+    'Іграшки': 'linear-gradient(135deg, hsl(210, 80%, 60%) 0%, hsl(240, 70%, 70%) 100%)',
+    'Власне виробництво': 'linear-gradient(135deg, hsl(40, 70%, 65%) 0%, hsl(50, 60%, 75%) 100%)',
+    'Творчість': 'linear-gradient(135deg, hsl(290, 70%, 65%) 0%, hsl(320, 75%, 70%) 100%)',
+    'Настільні ігри': 'linear-gradient(135deg, hsl(120, 60%, 55%) 0%, hsl(150, 65%, 65%) 100%)',
+    'Сезонні товари': 'linear-gradient(135deg, hsl(180, 70%, 50%) 0%, hsl(200, 75%, 60%) 100%)',
+    'Акційні позиції': 'linear-gradient(135deg, hsl(350, 80%, 55%) 0%, hsl(10, 90%, 65%) 100%)',
   },
 };
 
