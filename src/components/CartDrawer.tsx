@@ -98,6 +98,7 @@ export const CartDrawer = () => {
                   <button
                     onClick={handleClose}
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="Закрити кошик"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -161,7 +162,7 @@ export const CartDrawer = () => {
                   </div>
                   <button
                     onClick={() => setStep('checkout')}
-                    className="w-full bg-black text-white py-4 rounded-full font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors text-sm"
+                    className="w-full bg-black text-white py-4 rounded-full font-bold uppercase tracking-wider hover:bg-gray-800 active:scale-[0.98] transition-all text-sm"
                   >
                     Оформити замовлення
                   </button>

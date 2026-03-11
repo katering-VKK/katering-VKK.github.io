@@ -33,7 +33,11 @@ export const ProductGrid = () => {
     });
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
     else if (sortBy === 'price-desc') list = [...list].sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
-    else if (sortBy === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortBy === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+    else list = [...list].sort((a, b) => {
+      const catOrder = categories.indexOf(a.category) - categories.indexOf(b.category);
+      return catOrder !== 0 ? catOrder : a.name.localeCompare(b.name, 'uk');
+    });
     return list;
   }, [products, activeCategory, activeTag, sortBy]);
 
@@ -109,8 +113,8 @@ export const ProductGrid = () => {
         <div className="flex flex-wrap gap-2">
           {[
             { value: 'default' as SortOption, label: 'За замовчуванням' },
-            { value: 'price-asc' as SortOption, label: 'Ціна: спочатку дешевші' },
-            { value: 'price-desc' as SortOption, label: 'Ціна: спочатку дорожчі' },
+            { value: 'price-asc' as SortOption, label: 'Ціна ↑' },
+            { value: 'price-desc' as SortOption, label: 'Ціна ↓' },
             { value: 'name' as SortOption, label: 'За назвою' },
           ].map(opt => (
             <button
@@ -119,6 +123,8 @@ export const ProductGrid = () => {
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 sortBy === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
+              aria-pressed={sortBy === opt.value}
+              aria-label={opt.label}
             >
               {opt.label}
             </button>

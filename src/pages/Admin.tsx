@@ -573,6 +573,7 @@ export const Admin = () => {
           key={editing.id}
           product={editing}
           onSave={(p) => { setImagePreviews(prev => { const next = { ...prev }; delete next[p.id]; return next; }); handleSaveProduct(p); }}
+          onDelete={() => handleDeleteProduct(editing.id, editing.name)}
           onClose={() => { if (editing) setImagePreviews(prev => { const next = { ...prev }; delete next[editing.id]; return next; }); setEditing(null); }}
           onFormChange={(updated) => {
             hasLocalChangesRef.current = true;
@@ -897,7 +898,7 @@ function AdminSections({
       else (map['Інше'] = map['Інше'] ?? []).push(p);
     }
     for (const c of Object.keys(map)) {
-      map[c] = [...map[c]].sort((a, b) => a.id - b.id);
+      map[c] = [...map[c]].sort((a, b) => a.name.localeCompare(b.name, 'uk') || a.id - b.id);
     }
     return map;
   }, [localProducts, search]);
@@ -914,6 +915,7 @@ function AdminSections({
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-gray-500 mb-2">Подвійний клік — редагувати · наведення — видалити</p>
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
@@ -929,7 +931,7 @@ function AdminSections({
           </button>
         )}
         {search && totalFiltered === 0 && (
-          <p className="absolute left-0 right-0 top-full mt-2 text-sm text-gray-500">Нічого не знайдено</p>
+          <p className="absolute left-0 right-0 top-full mt-2 text-sm text-gray-500">Нічого не знайдено. Спробуйте інший запит або очистіть пошук.</p>
         )}
       </div>
       {catsToShow.map(cat => {
@@ -1038,8 +1040,8 @@ function AdminSections({
   );
 }
 
-function ProductEditModal({ product, onSave, onClose, onUnauthorized, onFormChange, onImagePreview, apiUrl, authToken }: {
-  product: Product; onSave: (p: Product) => void; onClose: () => void; onUnauthorized?: () => void;
+function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, onFormChange, onImagePreview, apiUrl, authToken }: {
+  product: Product; onSave: (p: Product) => void; onDelete?: () => void; onClose: () => void; onUnauthorized?: () => void;
   onFormChange?: (p: Product) => void;
   onImagePreview?: (productId: number, dataUrl: string | null) => void;
   apiUrl: string; authToken: string;
@@ -1201,9 +1203,20 @@ function ProductEditModal({ product, onSave, onClose, onUnauthorized, onFormChan
         <div className="bg-gradient-to-br from-violet-50 to-white px-6 py-5 border-b border-gray-100">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-bold text-gray-900">Редагувати товар</h2>
-            <button onClick={onClose} className="p-2 hover:bg-white/80 rounded-xl transition-colors">
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="flex items-center gap-1">
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
+                  title="Видалити товар"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              )}
+              <button onClick={onClose} className="p-2 hover:bg-white/80 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
           </div>
           <p className="text-sm text-gray-500 mt-0.5">#{product.id} · {form.category}</p>
         </div>
