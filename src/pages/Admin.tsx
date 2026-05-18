@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -58,7 +58,7 @@ export const Admin = () => {
   const [saveError, setSaveError] = useState('');
   const [uploadTest, setUploadTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; msg?: string }>({ status: 'idle' });
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
-  const [adminTab, setAdminTab] = useState<'products' | 'sections'>('products');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections'>('dashboard');
   const skipSyncRef = useRef(false);
   const hasLocalChangesRef = useRef(false);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -505,8 +505,8 @@ export const Admin = () => {
   const productsList = Array.isArray(products) ? products : [];
   const totalProducts = localProducts.length;
   const hasUnsaved = useMemo(() => {
-    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, description: p.description, image: p.image })));
-    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, name: p.name, price: p.price, category: p.category, tag: p.tag, description: p.description, image: p.image })));
+    const orig = JSON.stringify(productsList.map(p => ({ id: p.id, article: p.article, name: p.name, price: p.price, category: p.category, tag: p.tag, units: p.units, description: p.description, image: p.image })));
+    const curr = JSON.stringify(localProducts.map(p => ({ id: p.id, article: p.article, name: p.name, price: p.price, category: p.category, tag: p.tag, units: p.units, description: p.description, image: p.image })));
     return orig !== curr;
   }, [productsList, localProducts]);
 
@@ -517,6 +517,10 @@ export const Admin = () => {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+                <button onClick={() => setAdminTab('dashboard')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'dashboard' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  <BarChart3 className="w-4 h-4" />
+                  Дашборд
+                </button>
                 <button onClick={() => setAdminTab('products')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${adminTab === 'products' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
                   Товари
                 </button>
@@ -525,7 +529,7 @@ export const Admin = () => {
                   Розділи сайту
                 </button>
               </div>
-              {adminTab === 'products' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
+              {adminTab !== 'sections' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
               {hasUnsaved && <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">Є зміни</span>}
               {apiStatus === 'ok' && <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle className="w-3.5 h-3.5" /> API</span>}
             </div>
@@ -589,7 +593,16 @@ export const Admin = () => {
           </div>
         )}
 
-        {adminTab === 'sections' ? (
+        {adminTab === 'dashboard' ? (
+          <AdminDashboard
+            localProducts={localProducts}
+            apiStatus={apiStatus}
+            uploadOk={uploadOk}
+            hasUnsaved={hasUnsaved}
+            onOpenProducts={() => setAdminTab('products')}
+            onOpenSections={() => setAdminTab('sections')}
+          />
+        ) : adminTab === 'sections' ? (
           <SiteContentEditor
             content={siteContent}
             onSave={refetchSiteContent}
@@ -643,6 +656,142 @@ export const Admin = () => {
     </div>
   );
 };
+
+function formatAdminMoney(value: number) {
+  return value.toLocaleString('uk-UA') + ' ₴';
+}
+
+function AdminDashboard({ localProducts, apiStatus, uploadOk, hasUnsaved, onOpenProducts, onOpenSections }: {
+  localProducts: Product[];
+  apiStatus: 'checking' | 'ok' | 'no-token' | 'error';
+  uploadOk: boolean;
+  hasUnsaved: boolean;
+  onOpenProducts: () => void;
+  onOpenSections: () => void;
+}) {
+  const stats = useMemo(() => {
+    const categoriesMap = localProducts.reduce<Record<string, { count: number; units: number; value: number }>>((acc, p) => {
+      const cat = String(p.category || 'Інше');
+      const price = parseInt(String(p.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
+      const units = productUnits(p);
+      acc[cat] = acc[cat] || { count: 0, units: 0, value: 0 };
+      acc[cat].count += 1;
+      acc[cat].units += units;
+      acc[cat].value += price * units;
+      return acc;
+    }, {});
+    const categoryRows = Object.keys(categoriesMap)
+      .map(cat => ({ category: cat, ...categoriesMap[cat] }))
+      .sort((a, b) => b.count - a.count);
+    const noArticle = localProducts.filter(p => !productArticle(p)).length;
+    const noImage = localProducts.filter(p => !p.image).length;
+    const noDescription = localProducts.filter(p => !String(p.description ?? '').trim()).length;
+    const totalUnits = localProducts.reduce((sum, p) => sum + productUnits(p), 0);
+    const totalValue = categoryRows.reduce((sum, row) => sum + row.value, 0);
+    const tagged = localProducts.filter(p => String(p.tag || '').trim()).length;
+    return { categoryRows, noArticle, noImage, noDescription, totalUnits, totalValue, tagged };
+  }, [localProducts]);
+
+  const apiLabel = apiStatus === 'ok' ? 'API працює' : apiStatus === 'checking' ? 'API перевіряється' : apiStatus === 'no-token' ? 'Немає ADMIN_TOKEN' : 'API недоступний';
+  const apiTone = apiStatus === 'ok' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-800 border-amber-100';
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-3xl bg-gradient-to-br from-gray-950 via-gray-900 to-violet-950 text-white p-6 shadow-xl overflow-hidden relative">
+        <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-violet-500/30 blur-3xl" />
+        <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-violet-200 mb-2">Lumu admin</p>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight">Дашборд товарів</h1>
+            <p className="text-sm text-white/60 mt-2 max-w-xl">Швидкий зріз каталогу, заповненості карток і готовності API перед збереженням змін.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={onOpenProducts} className="px-4 py-2 rounded-xl bg-white text-black text-sm font-bold hover:bg-violet-100 transition-colors">До товарів</button>
+            <button onClick={onOpenSections} className="px-4 py-2 rounded-xl bg-white/10 text-white text-sm font-bold hover:bg-white/15 transition-colors">Розділи сайту</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <DashboardCard label="Товарів" value={localProducts.length.toLocaleString('uk-UA')} hint={`${stats.categoryRows.length} категорій`} />
+        <DashboardCard label="Юнітів" value={stats.totalUnits.toLocaleString('uk-UA')} hint="за полем units" />
+        <DashboardCard label="Оціночна сума" value={formatAdminMoney(stats.totalValue)} hint="ціна × юніти" />
+        <DashboardCard label="З тегами" value={stats.tagged.toLocaleString('uk-UA')} hint="хіти, акції, новинки" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Категорії</h2>
+            <span className="text-xs text-gray-400">топ за кількістю товарів</span>
+          </div>
+          <div className="space-y-3">
+            {stats.categoryRows.slice(0, 7).map(row => {
+              const pct = localProducts.length ? Math.round((row.count / localProducts.length) * 100) : 0;
+              return (
+                <div key={row.category}>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="font-medium text-gray-700">{row.category}</span>
+                    <span className="text-gray-500">{row.count} товарів · {row.units} од.</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-violet-600" style={{ width: `${Math.max(4, pct)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Контроль якості</h2>
+          <div className="space-y-3">
+            <DashboardWarning label="Без артикула" value={stats.noArticle} />
+            <DashboardWarning label="Без фото" value={stats.noImage} />
+            <DashboardWarning label="Без опису" value={stats.noDescription} />
+            {hasUnsaved && (
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-100">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p className="text-sm font-medium">Є незбережені зміни. Натисни «Зберегти в GitHub» у вкладці товарів.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className={`rounded-2xl border p-4 ${apiTone}`}>
+          <p className="text-sm font-bold">{apiLabel}</p>
+          <p className="text-xs mt-1 opacity-80">Статус адмінського API для авторизації, товарів і розділів сайту.</p>
+        </div>
+        <div className={`rounded-2xl border p-4 ${uploadOk ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
+          <p className="text-sm font-bold">{uploadOk ? 'Фото налаштовані' : 'Фото потребують перевірки'}</p>
+          <p className="text-xs mt-1 opacity-80">Dry-run тест більше не створює товар 99999 у репозиторії.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{label}</p>
+      <p className="text-2xl font-black text-gray-900 mt-2">{value}</p>
+      <p className="text-xs text-gray-500 mt-1">{hint}</p>
+    </div>
+  );
+}
+
+function DashboardWarning({ label, value }: { label: string; value: number }) {
+  const isOk = value === 0;
+  return (
+    <div className={`flex items-center justify-between p-3 rounded-xl border ${isOk ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-gray-50 text-gray-700 border-gray-100'}`}>
+      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-black">{value.toLocaleString('uk-UA')}</span>
+    </div>
+  );
+}
 
 const TAG_PRESETS = ['Хіт продажу', 'Сезонні', 'Акція', 'New', 'Розмальовки', 'Наліпки', 'Подарунковий набір', ''];
 
