@@ -37,6 +37,143 @@ const getApiUrl = () => {
 };
 const API_URL = getApiUrl();
 
+const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+const exportDate = () => new Date().toISOString().slice(0, 10);
+
+function downloadAdminFile(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function priceNumber(product: Pick<Product, 'price'>) {
+  return parseInt(String(product.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
+}
+
+function productExportPayload(products: Product[]) {
+  return products.map(p => ({
+    id: Number(p.id),
+    ...(productArticle(p) && { article: productArticle(p) }),
+    name: String(p.name || '').trim(),
+    price: String(p.price || '').trim(),
+    category: String(p.category || 'Книги'),
+    tag: String(p.tag || '').trim(),
+    units: productUnits(p),
+    ...(p.description && { description: String(p.description).trim() }),
+    ...(p.image && { image: String(p.image) }),
+  }));
+}
+
+function categorySummary(products: Product[]) {
+  return products.reduce<Record<string, { count: number; units: number; sum: number; withImage: number; withArticle: number; withDescription: number }>>((acc, p) => {
+    const cat = String(p.category || 'Інше');
+    const units = productUnits(p);
+    acc[cat] = acc[cat] || { count: 0, units: 0, sum: 0, withImage: 0, withArticle: 0, withDescription: 0 };
+    acc[cat].count += 1;
+    acc[cat].units += units;
+    acc[cat].sum += priceNumber(p) * units;
+    if (p.image) acc[cat].withImage += 1;
+    if (productArticle(p)) acc[cat].withArticle += 1;
+    if (String(p.description ?? '').trim()) acc[cat].withDescription += 1;
+    return acc;
+  }, {});
+}
+
+function productRows(products: Product[]) {
+  return products.map(p => {
+    const units = productUnits(p);
+    return [
+      p.id,
+      productArticle(p),
+      p.name,
+      p.category,
+      p.tag,
+      p.price,
+      units,
+      priceNumber(p) * units,
+      p.description ?? '',
+      p.image ?? '',
+    ];
+  });
+}
+
+function buildProductsCsv(products: Product[]) {
+  return [
+    ['id', 'article', 'name', 'category', 'tag', 'price', 'units', 'line_total', 'description', 'image'].map(csvCell).join(','),
+    ...productRows(products).map(row => row.map(csvCell).join(',')),
+  ].join('\n');
+}
+
+function buildCategoryCsv(products: Product[]) {
+  const rows = Object.entries(categorySummary(products))
+    .map(([cat, info]) => [cat, info.count, info.units, info.sum, info.withArticle, info.withImage, info.withDescription])
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  return [
+    ['category', 'products', 'units', 'estimated_total', 'with_article', 'with_image', 'with_description'].map(csvCell).join(','),
+    ...rows.map(row => row.map(csvCell).join(',')),
+  ].join('\n');
+}
+
+function buildIssuesCsv(products: Product[]) {
+  const rows = products
+    .map(p => {
+      const issues = [
+        !productArticle(p) ? 'no_article' : '',
+        !p.image ? 'no_image' : '',
+        !String(p.description ?? '').trim() ? 'no_description' : '',
+      ].filter(Boolean);
+      return { p, issues };
+    })
+    .filter(row => row.issues.length > 0)
+    .map(({ p, issues }) => [p.id, productArticle(p), p.name, p.category, p.price, productUnits(p), issues.join('; ')]);
+  return [
+    ['id', 'article', 'name', 'category', 'price', 'units', 'issues'].map(csvCell).join(','),
+    ...rows.map(row => row.map(csvCell).join(',')),
+  ].join('\n');
+}
+
+function buildFullReportCsv(products: Product[]) {
+  return [
+    buildProductsCsv(products),
+    '',
+    buildCategoryCsv(products),
+    '',
+    buildIssuesCsv(products),
+  ].join('\n');
+}
+
+function buildStatsJson(products: Product[]) {
+  const categories = categorySummary(products);
+  const productsWithoutArticle = products.filter(p => !productArticle(p)).map(p => p.id);
+  const productsWithoutImage = products.filter(p => !p.image).map(p => p.id);
+  const productsWithoutDescription = products.filter(p => !String(p.description ?? '').trim()).map(p => p.id);
+  const totalUnits = products.reduce((sum, p) => sum + productUnits(p), 0);
+  const estimatedTotal = products.reduce((sum, p) => sum + priceNumber(p) * productUnits(p), 0);
+  return {
+    generatedAt: new Date().toISOString(),
+    totals: {
+      products: products.length,
+      categories: Object.keys(categories).length,
+      units: totalUnits,
+      estimatedTotal,
+      tagged: products.filter(p => String(p.tag || '').trim()).length,
+      withArticle: products.length - productsWithoutArticle.length,
+      withImage: products.length - productsWithoutImage.length,
+      withDescription: products.length - productsWithoutDescription.length,
+    },
+    categories,
+    quality: {
+      productsWithoutArticle,
+      productsWithoutImage,
+      productsWithoutDescription,
+    },
+  };
+}
+
 export const Admin = () => {
   const { products, loading, refetch } = useProducts();
   const { showToast } = useStore();
@@ -186,74 +323,33 @@ export const Admin = () => {
   };
 
   const handleExportProducts = () => {
-    const payload = localProducts.map(p => ({
-      id: Number(p.id),
-      ...(productArticle(p) && { article: productArticle(p) }),
-      name: String(p.name || '').trim(),
-      price: String(p.price || '').trim(),
-      category: String(p.category || 'Книги'),
-      tag: String(p.tag || '').trim(),
-      units: productUnits(p),
-      ...(p.description && { description: String(p.description).trim() }),
-      ...(p.image && { image: String(p.image) }),
-    }));
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `products-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Експортовано');
+    downloadAdminFile(JSON.stringify(productExportPayload(localProducts), null, 2), `products-${exportDate()}.json`, 'application/json;charset=utf-8');
+    showToast('Товари JSON вигружено');
   };
 
   const handleExportReport = () => {
-    const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-    const rows = localProducts.map(p => {
-      const priceNum = parseInt(String(p.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
-      const units = productUnits(p);
-      return [
-        p.id,
-        productArticle(p),
-        p.name,
-        p.category,
-        p.tag,
-        p.price,
-        units,
-        priceNum * units,
-        p.description ?? '',
-        p.image ?? '',
-      ];
-    });
-    const categorySummary = localProducts.reduce<Record<string, { count: number; units: number; sum: number }>>((acc, p) => {
-      const cat = String(p.category || 'Інше');
-      const priceNum = parseInt(String(p.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
-      const units = productUnits(p);
-      acc[cat] = acc[cat] || { count: 0, units: 0, sum: 0 };
-      acc[cat].count += 1;
-      acc[cat].units += units;
-      acc[cat].sum += priceNum * units;
-      return acc;
-    }, {});
-    const categoryRows = Object.keys(categorySummary).map(cat => {
-      const info = categorySummary[cat];
-      return [cat, info.count, info.units, info.sum];
-    });
-    const csv = [
-      ['id', 'article', 'name', 'category', 'tag', 'price', 'units', 'line_total', 'description', 'image'].map(csvCell).join(','),
-      ...rows.map(row => row.map(csvCell).join(',')),
-      '',
-      ['category', 'products', 'units', 'estimated_total'].map(csvCell).join(','),
-      ...categoryRows.map(row => row.map(csvCell).join(',')),
-    ].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `lumu-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Звіт CSV вигружено');
+    downloadAdminFile('\uFEFF' + buildFullReportCsv(localProducts), `lumu-full-report-${exportDate()}.csv`, 'text/csv;charset=utf-8');
+    showToast('Повний звіт CSV вигружено');
+  };
+
+  const handleExportProductsCsv = () => {
+    downloadAdminFile('\uFEFF' + buildProductsCsv(localProducts), `products-table-${exportDate()}.csv`, 'text/csv;charset=utf-8');
+    showToast('Товари CSV вигружено');
+  };
+
+  const handleExportStatsJson = () => {
+    downloadAdminFile(JSON.stringify(buildStatsJson(localProducts), null, 2), `lumu-stats-${exportDate()}.json`, 'application/json;charset=utf-8');
+    showToast('Статистику JSON вигружено');
+  };
+
+  const handleExportCategoriesCsv = () => {
+    downloadAdminFile('\uFEFF' + buildCategoryCsv(localProducts), `category-stats-${exportDate()}.csv`, 'text/csv;charset=utf-8');
+    showToast('Статистику категорій CSV вигружено');
+  };
+
+  const handleExportIssuesCsv = () => {
+    downloadAdminFile('\uFEFF' + buildIssuesCsv(localProducts), `product-issues-${exportDate()}.csv`, 'text/csv;charset=utf-8');
+    showToast('Проблемні товари CSV вигружено');
   };
 
   const handleImportProducts = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -580,7 +676,15 @@ export const Admin = () => {
             </button>
             <button onClick={handleExportReport} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
               <FileText className="w-4 h-4" />
-              Вигрузити звіт CSV
+              Повний звіт CSV
+            </button>
+            <button onClick={handleExportProductsCsv} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
+              <Download className="w-4 h-4" />
+              Товари CSV
+            </button>
+            <button onClick={handleExportStatsJson} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
+              <BarChart3 className="w-4 h-4" />
+              Статистика JSON
             </button>
             <label className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
               <Upload className="w-4 h-4" />
@@ -601,6 +705,12 @@ export const Admin = () => {
             hasUnsaved={hasUnsaved}
             onOpenProducts={() => setAdminTab('products')}
             onOpenSections={() => setAdminTab('sections')}
+            onExportProducts={handleExportProducts}
+            onExportProductsCsv={handleExportProductsCsv}
+            onExportReport={handleExportReport}
+            onExportStatsJson={handleExportStatsJson}
+            onExportCategoriesCsv={handleExportCategoriesCsv}
+            onExportIssuesCsv={handleExportIssuesCsv}
           />
         ) : adminTab === 'sections' ? (
           <SiteContentEditor
@@ -661,13 +771,32 @@ function formatAdminMoney(value: number) {
   return value.toLocaleString('uk-UA') + ' ₴';
 }
 
-function AdminDashboard({ localProducts, apiStatus, uploadOk, hasUnsaved, onOpenProducts, onOpenSections }: {
+function AdminDashboard({
+  localProducts,
+  apiStatus,
+  uploadOk,
+  hasUnsaved,
+  onOpenProducts,
+  onOpenSections,
+  onExportProducts,
+  onExportProductsCsv,
+  onExportReport,
+  onExportStatsJson,
+  onExportCategoriesCsv,
+  onExportIssuesCsv,
+}: {
   localProducts: Product[];
   apiStatus: 'checking' | 'ok' | 'no-token' | 'error';
   uploadOk: boolean;
   hasUnsaved: boolean;
   onOpenProducts: () => void;
   onOpenSections: () => void;
+  onExportProducts: () => void;
+  onExportProductsCsv: () => void;
+  onExportReport: () => void;
+  onExportStatsJson: () => void;
+  onExportCategoriesCsv: () => void;
+  onExportIssuesCsv: () => void;
 }) {
   const stats = useMemo(() => {
     const categoriesMap = localProducts.reduce<Record<string, { count: number; units: number; value: number }>>((acc, p) => {
@@ -718,6 +847,24 @@ function AdminDashboard({ localProducts, apiStatus, uploadOk, hasUnsaved, onOpen
         <DashboardCard label="Оціночна сума" value={formatAdminMoney(stats.totalValue)} hint="ціна × юніти" />
         <DashboardCard label="З тегами" value={stats.tagged.toLocaleString('uk-UA')} hint="хіти, акції, новинки" />
       </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Вигрузки та статистика</h2>
+            <p className="text-sm text-gray-500">Окремі файли для обліку, Excel/Google Sheets, контролю якості та повторного імпорту.</p>
+          </div>
+          <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 self-start sm:self-auto">{localProducts.length.toLocaleString('uk-UA')} товарів</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ExportAction title="Повний звіт CSV" hint="товари, категорії, проблемні картки" onClick={onExportReport} />
+          <ExportAction title="Товари JSON" hint="для резервної копії та імпорту" onClick={onExportProducts} />
+          <ExportAction title="Товари CSV" hint="таблиця товарів для Excel/Sheets" onClick={onExportProductsCsv} />
+          <ExportAction title="Статистика JSON" hint="підсумки, категорії, quality списки" onClick={onExportStatsJson} />
+          <ExportAction title="Категорії CSV" hint="товари, юніти, сума, заповненість" onClick={onExportCategoriesCsv} />
+          <ExportAction title="Проблемні товари CSV" hint="без артикула, фото або опису" onClick={onExportIssuesCsv} />
+        </div>
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -780,6 +927,22 @@ function DashboardCard({ label, value, hint }: { label: string; value: string; h
       <p className="text-2xl font-black text-gray-900 mt-2">{value}</p>
       <p className="text-xs text-gray-500 mt-1">{hint}</p>
     </div>
+  );
+}
+
+function ExportAction({ title, hint, onClick }: { title: string; hint: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group text-left p-4 rounded-2xl border border-gray-200 bg-gray-50/70 hover:bg-white hover:border-violet-200 hover:shadow-md transition-all"
+    >
+      <span className="flex items-center gap-2 text-sm font-bold text-gray-900">
+        <Download className="w-4 h-4 text-violet-600 group-hover:translate-y-0.5 transition-transform" />
+        {title}
+      </span>
+      <span className="block text-xs text-gray-500 mt-1 leading-relaxed">{hint}</span>
+    </button>
   );
 }
 
