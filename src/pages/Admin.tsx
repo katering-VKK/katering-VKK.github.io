@@ -10,6 +10,7 @@ import type { Product } from '../data/products';
 import { categories } from '../data/products';
 import { ProductImage } from '../components/ProductImage';
 import { resolveImageUrl } from '../utils/imageUrl';
+import { formatProductMeta, normalizeImportedProduct, parseDelimitedProducts, parseProductDetailsFromName, productArticle, productUnits } from '../utils/productImport';
 
 const ADMIN_CATEGORIES = categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу');
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -72,10 +73,10 @@ export const Admin = () => {
       const res = await fetch(`${API_URL}/admin/upload-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ base64: pixel, productId: 99999, ext: 'jpg', token }),
+        body: JSON.stringify({ base64: pixel, productId: 99999, ext: 'jpg', token, dryRun: true }),
       });
       const data = await res.json().catch(() => ({}));
-      if (data.ok && data.url) {
+      if (data.ok) {
         setUploadTest({ status: 'ok', msg: 'Фото працює' });
       } else {
         setUploadTest({ status: 'fail', msg: data.error || `HTTP ${res.status}` });
@@ -161,10 +162,12 @@ export const Admin = () => {
     const newId = maxId + 1;
     const newProduct: Product = {
       id: newId,
+      article: '',
       name: 'Новий товар',
       price: '100 ₴',
       category,
       tag: '',
+      units: 1,
       description: '',
     };
     setLocalProducts(prev => [...prev, newProduct]);
@@ -185,10 +188,12 @@ export const Admin = () => {
   const handleExportProducts = () => {
     const payload = localProducts.map(p => ({
       id: Number(p.id),
+      ...(productArticle(p) && { article: productArticle(p) }),
       name: String(p.name || '').trim(),
       price: String(p.price || '').trim(),
       category: String(p.category || 'Книги'),
       tag: String(p.tag || '').trim(),
+      units: productUnits(p),
       ...(p.description && { description: String(p.description).trim() }),
       ...(p.image && { image: String(p.image) }),
     }));
@@ -202,6 +207,55 @@ export const Admin = () => {
     showToast('Експортовано');
   };
 
+  const handleExportReport = () => {
+    const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = localProducts.map(p => {
+      const priceNum = parseInt(String(p.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
+      const units = productUnits(p);
+      return [
+        p.id,
+        productArticle(p),
+        p.name,
+        p.category,
+        p.tag,
+        p.price,
+        units,
+        priceNum * units,
+        p.description ?? '',
+        p.image ?? '',
+      ];
+    });
+    const categorySummary = localProducts.reduce<Record<string, { count: number; units: number; sum: number }>>((acc, p) => {
+      const cat = String(p.category || 'Інше');
+      const priceNum = parseInt(String(p.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
+      const units = productUnits(p);
+      acc[cat] = acc[cat] || { count: 0, units: 0, sum: 0 };
+      acc[cat].count += 1;
+      acc[cat].units += units;
+      acc[cat].sum += priceNum * units;
+      return acc;
+    }, {});
+    const categoryRows = Object.keys(categorySummary).map(cat => {
+      const info = categorySummary[cat];
+      return [cat, info.count, info.units, info.sum];
+    });
+    const csv = [
+      ['id', 'article', 'name', 'category', 'tag', 'price', 'units', 'line_total', 'description', 'image'].map(csvCell).join(','),
+      ...rows.map(row => row.map(csvCell).join(',')),
+      '',
+      ['category', 'products', 'units', 'estimated_total'].map(csvCell).join(','),
+      ...categoryRows.map(row => row.map(csvCell).join(',')),
+    ].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lumu-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Звіт CSV вигружено');
+  };
+
   const handleImportProducts = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -209,34 +263,17 @@ export const Admin = () => {
     const reader = new FileReader();
     reader.onerror = () => setSaveError('Не вдалося прочитати файл');
     reader.onload = () => {
+      const text = String(reader.result ?? '');
       try {
-        const text = String(reader.result ?? '');
         const data = JSON.parse(text);
-        if (!Array.isArray(data)) {
-          setSaveError('JSON має бути масивом товарів');
+        const source = Array.isArray(data) ? data : Array.isArray(data?.products) ? data.products : null;
+        if (!source) {
+          setSaveError('JSON має бути масивом товарів або обʼєктом { products: [...] }');
           return;
         }
-        const valid: Product[] = [];
-        const defaultCategory = 'Книги';
-        for (let i = 0; i < data.length; i++) {
-          const p = data[i];
-          if (p == null || typeof p !== 'object') continue;
-          const name = String(p.name ?? '').trim();
-          if (!name) continue;
-          const price = String(p.price ?? '').trim();
-          if (!price) continue;
-          const priceNum = parseInt(price.replace(/\s/g, '').replace('₴', ''), 10);
-          if (isNaN(priceNum) || priceNum < 0) continue;
-          valid.push({
-            id: Number(p.id) || i + 1,
-            name,
-            price,
-            category: String(p.category ?? defaultCategory).trim() || defaultCategory,
-            tag: String(p.tag ?? '').trim(),
-            ...(p.description && typeof p.description === 'string' && { description: String(p.description).trim() }),
-            ...(p.image && typeof p.image === 'string' && !p.image.startsWith('data:') && { image: p.image }),
-          });
-        }
+        const valid = source
+          .map((p: Partial<Product>, i: number) => p && typeof p === 'object' ? normalizeImportedProduct(p, i, 'Книги') : null)
+          .filter((p: Product | null): p is Product => Boolean(p));
         if (valid.length === 0) {
           setSaveError('У файлі немає валідних товарів');
           return;
@@ -244,9 +281,20 @@ export const Admin = () => {
         const withUniqueIds = valid.map((p, idx) => ({ ...p, id: idx + 1 }));
         hasLocalChangesRef.current = true;
         setLocalProducts(withUniqueIds);
+        setNewProductIds(new Set());
+        setSaveError('');
         showToast(`Завантажено ${withUniqueIds.length} товарів. Натисніть «Зберегти в GitHub».`);
-      } catch (err) {
-        setSaveError('Невірний JSON: ' + ((err as Error).message || 'помилка парсингу'));
+      } catch {
+        const parsed = parseDelimitedProducts(text, 'Книги').map((p, idx) => ({ ...p, id: idx + 1 }));
+        if (parsed.length === 0) {
+          setSaveError('Не вдалося прочитати файл: JSON, CSV або TXT з назвами товарів');
+          return;
+        }
+        hasLocalChangesRef.current = true;
+        setLocalProducts(parsed);
+        setNewProductIds(new Set());
+        setSaveError('');
+        showToast(`Автозавантажено ${parsed.length} товарів. Артикул/ціна/юніти перенесені в поля.`);
       }
     };
     reader.readAsText(file, 'UTF-8');
@@ -259,10 +307,12 @@ export const Admin = () => {
     try {
       let payload = localProducts.map(p => ({
         id: Number(p.id),
+        ...(productArticle(p) && { article: productArticle(p) }),
         name: String(p.name || '').trim(),
         price: String(p.price || '').trim(),
         category: String(p.category || 'Книги'),
         tag: String(p.tag || '').trim(),
+        units: productUnits(p),
         ...(p.description && { description: String(p.description).trim() }),
         ...(p.image && { image: String(p.image) }),
       }));
@@ -524,10 +574,14 @@ export const Admin = () => {
               <Download className="w-4 h-4" />
               Вигрузити JSON
             </button>
+            <button onClick={handleExportReport} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
+              <FileText className="w-4 h-4" />
+              Вигрузити звіт CSV
+            </button>
             <label className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
               <Upload className="w-4 h-4" />
-              Завантажити JSON
-              <input ref={importInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleImportProducts} />
+              Автозавантажити товари
+              <input ref={importInputRef} type="file" accept=".json,.csv,.txt,application/json,text/csv,text/plain" className="hidden" onChange={handleImportProducts} />
             </label>
             <button onClick={testUpload} disabled={uploadTest.status === 'testing'} className="text-sm text-gray-500 hover:text-black underline disabled:opacity-50">
               Тест завантаження фото
@@ -570,7 +624,6 @@ export const Admin = () => {
       <AnimatePresence>
         {editing && (
         <ProductEditModal
-          key={editing.id}
           product={editing}
           onSave={(p) => { setImagePreviews(prev => { const next = { ...prev }; delete next[p.id]; return next; }); handleSaveProduct(p); }}
           onDelete={() => handleDeleteProduct(editing.id, editing.name)}
@@ -892,7 +945,7 @@ function AdminSections({
     const q = search.trim().toLowerCase();
     for (const c of ADMIN_CATEGORIES) map[c] = [];
     for (const p of localProducts) {
-      if (q && !(p.name || '').toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q)) continue;
+      if (q && !(p.name || '').toLowerCase().includes(q) && !(p.tag || '').toLowerCase().includes(q) && !productArticle(p).toLowerCase().includes(q)) continue;
       const cat = String(p.category || '').trim() || 'Інше';
       if (map[cat]) map[cat].push(p);
       else (map['Інше'] = map['Інше'] ?? []).push(p);
@@ -1014,7 +1067,7 @@ function AdminSections({
                                 <p className="font-semibold text-gray-900 truncate">{product.name}</p>
                                 {isNew && <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 rounded-full">Новий</span>}
                               </div>
-                              <p className="text-sm text-gray-500 truncate">{product.tag || '—'} · {product.price}</p>
+                              <p className="text-sm text-gray-500 truncate">{product.tag || '—'} · {product.price}{formatProductMeta(product) ? ` · ${formatProductMeta(product)}` : ''}</p>
                             </div>
                             <button
                               onClick={e => { e.stopPropagation(); onDelete(product.id, product.name); }}
@@ -1046,7 +1099,7 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
   onImagePreview?: (productId: number, dataUrl: string | null) => void;
   apiUrl: string; authToken: string;
 }) {
-  const [form, setForm] = useState(product);
+  const [form, setForm] = useState<Product>(() => ({ ...product, units: productUnits(product) }));
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState('');
@@ -1054,7 +1107,7 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setForm(product);
+    setForm({ ...product, units: productUnits(product) });
     setPreviewDataUrl(null);
     setImgError('');
     setValidationError('');
@@ -1186,8 +1239,22 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
       return;
     }
     if (!price.includes('₴')) price = priceNum + ' ₴';
-    onSave({ ...form, name, price });
+    const units = productUnits(form);
+    onSave({ ...form, article: productArticle(form) || undefined, name, price, units });
     onClose();
+  };
+
+  const applyParsedName = () => {
+    const parsed = parseProductDetailsFromName(form.name);
+    const updated = {
+      ...form,
+      name: parsed.name || form.name,
+      article: form.article || parsed.article,
+      units: productUnits({ units: parsed.units }),
+      price: parsed.price || form.price,
+    };
+    setForm(updated);
+    onFormChange?.(updated);
   };
 
   return (
@@ -1254,7 +1321,17 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
             </div>
             <div className="flex-1 min-w-0 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Назва</label>
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Назва</label>
+                  <button
+                    type="button"
+                    onClick={applyParsedName}
+                    className="text-[11px] font-semibold text-violet-600 hover:text-violet-700"
+                    title="Витягнути артикул, ціну та юніти з назви"
+                  >
+                    Розкласти з назви
+                  </button>
+                </div>
                 <input
                   ref={nameInputRef}
                   value={form.name}
@@ -1262,6 +1339,29 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
                   placeholder="Назва товару"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Артикул</label>
+                  <input
+                    value={form.article ?? ''}
+                    onChange={e => setForm(p => ({ ...p, article: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                    placeholder="SKU / код"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Юніти</label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={productUnits(form)}
+                    onChange={e => setForm(p => ({ ...p, units: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none"
+                    placeholder="1"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

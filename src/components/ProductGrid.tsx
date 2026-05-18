@@ -6,6 +6,7 @@ import { useSiteContent } from '../context/SiteContentContext';
 import { categories, parsePrice } from '../data/products';
 import { useStore } from '../store';
 import { ProductImage } from './ProductImage';
+import { formatProductMeta } from '../utils/productImport';
 
 const ITEMS_PER_PAGE = 12;
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
@@ -220,6 +221,7 @@ export const ProductGrid = () => {
               <div className="px-1 py-2">
                 <p className="text-xs font-medium text-violet-500 uppercase tracking-wider mb-1.5">{product.category}</p>
                 <h3 className="text-sm font-bold mb-1 group-hover:text-violet-600 transition-colors leading-tight line-clamp-2">{product.name}</h3>
+                {formatProductMeta(product) && <p className="text-[11px] text-gray-400 mb-1 truncate">{formatProductMeta(product)}</p>}
                 {product.description && <p className="text-xs text-gray-500 line-clamp-2 mb-1">{product.description}</p>}
                 <div className="flex items-center justify-between">
                   <p className="text-base font-bold text-gray-900">{product.price}</p>

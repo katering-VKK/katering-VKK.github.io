@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import type { Product } from '../data/products';
 import { ProductImage } from './ProductImage';
+import { formatProductMeta } from '../utils/productImport';
 
 export const ProductQuickView = () => {
   const { products } = useProducts();
@@ -84,6 +85,9 @@ export const ProductQuickView = () => {
                 <span className="inline-flex self-start px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-700 mb-3">
                   {product.tag}
                 </span>
+              )}
+              {formatProductMeta(product) && (
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-400 mb-3">{formatProductMeta(product)}</p>
               )}
               {product.description && (
                 <p className="text-sm text-gray-600 leading-relaxed mb-4">{product.description}</p>

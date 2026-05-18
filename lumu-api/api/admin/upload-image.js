@@ -55,6 +55,7 @@ export default async function handler(req, res) {
         base64: parsed.base64,
         productId: parsed.productId,
         ext: parsed.ext || 'jpg',
+        dryRun: parsed.dryRun === 'true' || parsed.dryRun === true,
       };
     } catch {
       return send(400, { ok: false, error: 'Invalid form' });
@@ -75,7 +76,7 @@ export default async function handler(req, res) {
     return send(401, { ok: false, error: 'Unauthorized. Вийдіть і увійдіть знову.' });
   }
 
-  const { base64, productId, ext = 'jpg' } = body;
+  const { base64, productId, ext = 'jpg', dryRun = false } = body;
   if (!base64 || !productId) {
     return send(400, { ok: false, error: 'Missing base64 or productId' });
   }
@@ -94,6 +95,10 @@ export default async function handler(req, res) {
 
   if (content.length > 2 * 1024 * 1024) {
     return send(400, { ok: false, error: 'Image too large (max 2MB)' });
+  }
+
+  if (dryRun === true || dryRun === 'true') {
+    return send(200, { ok: true, dryRun: true });
   }
 
   try {

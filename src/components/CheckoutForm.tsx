@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts, parsePrice } from '../context/ProductsContext';
 import { isValidEmail, isValidUAPhone, formatPhoneForSubmit } from '../utils/validation';
+import { formatProductMeta } from '../utils/productImport';
 
 function formatPrice(n: number) {
   return n.toLocaleString('uk-UA') + ' ₴';
@@ -110,7 +111,9 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
       const priceNum = parsePrice(p.price);
       const subtotal = priceNum * qty;
       const tagPart = p.tag ? ` / ${escapeHtml(p.tag)}` : '';
-      return `${i + 1}. ID:${p.id} | ${escapeHtml(p.name)} | ${p.category}${tagPart} | ${qty} шт. × ${p.price} = ${subtotal.toLocaleString('uk-UA')} ₴`;
+      const meta = formatProductMeta(p);
+      const metaPart = meta ? ` | ${escapeHtml(meta)}` : '';
+      return `${i + 1}. ID:${p.id}${metaPart} | ${escapeHtml(p.name)} | ${p.category}${tagPart} | ${qty} шт. × ${p.price} = ${subtotal.toLocaleString('uk-UA')} ₴`;
     });
     const deliveryLabel = DELIVERY_OPTIONS.find(d => d.id === form.delivery)?.label ?? form.delivery;
     const lines = [

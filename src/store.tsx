@@ -10,7 +10,7 @@ interface StoreContextType {
   cart: CartItem[];
   cartCount: number;
   cartTotal: string;
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, qty?: number) => void;
   removeFromCart: (productId: number) => void;
   updateQty: (productId: number, qty: number) => void;
   clearCart: () => void;

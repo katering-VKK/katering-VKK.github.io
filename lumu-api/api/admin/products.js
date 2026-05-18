@@ -56,6 +56,13 @@ export default async function handler(req, res) {
     if (isNaN(priceNum) || priceNum < 0) {
       return res.status(400).json({ error: `Product ${i + 1}: invalid price format` });
     }
+    if (p.article != null && typeof p.article !== 'string') {
+      return res.status(400).json({ error: `Product ${i + 1}: article must be a string` });
+    }
+    const units = p.units == null ? 1 : Number(p.units);
+    if (!Number.isFinite(units) || units < 1) {
+      return res.status(400).json({ error: `Product ${i + 1}: units must be at least 1` });
+    }
     if (p.image && typeof p.image === 'string' && p.image.startsWith('data:image/')) {
       return res.status(400).json({ error: `Product ${i + 1}: upload images via /admin/upload-image first` });
     }
