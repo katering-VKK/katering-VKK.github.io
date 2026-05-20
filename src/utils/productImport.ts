@@ -24,11 +24,24 @@ export function productUnits(product: Pick<Product, 'units'>): number {
   return Number.isFinite(n) && n > 0 ? Math.max(1, Math.round(n)) : DEFAULT_PRODUCT_UNITS;
 }
 
-export function productArticle(product: Pick<Product, 'article'>): string {
-  return String(product.article ?? '').trim();
+function isLikelyArticle(value: string): boolean {
+  const token = value.trim();
+  return token.length >= 3 && token.length <= 32 && /\d/.test(token) && /^[A-Za-zА-Яа-яІіЇїЄєҐґ0-9._/-]+$/.test(token);
 }
 
-export function formatProductMeta(product: Pick<Product, 'article' | 'units'>): string {
+export function productArticle(product: Pick<Product, 'article'> & Partial<Pick<Product, 'name'>>): string {
+  const direct = String(product.article ?? '').trim();
+  if (direct) return direct;
+  if (product.name) return parseProductDetailsFromName(product.name).article;
+  return '';
+}
+
+export function productDisplayName(product: Pick<Product, 'name'> & Partial<Pick<Product, 'article'>>): string {
+  if (product.article) return String(product.name || '').trim();
+  return parseProductDetailsFromName(product.name).name;
+}
+
+export function formatProductMeta(product: Pick<Product, 'article' | 'units'> & Partial<Pick<Product, 'name'>>): string {
   const parts: string[] = [];
   const article = productArticle(product);
   if (article) parts.push(`Арт. ${article}`);
@@ -70,16 +83,24 @@ export function parseProductDetailsFromName(rawName: string) {
   let units = DEFAULT_PRODUCT_UNITS;
   let price = '';
 
+  const leadingMatch = name.match(/^([A-Za-zА-Яа-яІіЇїЄєҐґ0-9._/-]{3,32})\s*(?:[;:|]|[-–—]|\.\.?)\s+(.+)$/);
+  if (leadingMatch && isLikelyArticle(leadingMatch[1])) {
+    article = leadingMatch[1].replace(/[.;:,|/-]+$/g, '').trim();
+    name = leadingMatch[2].trim();
+  }
+
   const articlePatterns = [
     /\b(?:арт\.?|артикул|sku|код)\s*[:#№-]?\s*([A-Za-zА-Яа-яІіЇїЄєҐґ0-9._/-]{2,})/i,
     /(?:^|[\s[(])(?:№|#)\s*([A-Za-zА-Яа-яІіЇїЄєҐґ0-9._/-]{2,})/i,
   ];
-  for (const pattern of articlePatterns) {
-    const match = name.match(pattern);
-    if (match) {
-      article = match[1].trim();
-      name = name.replace(match[0], ' ');
-      break;
+  if (!article) {
+    for (const pattern of articlePatterns) {
+      const match = name.match(pattern);
+      if (match) {
+        article = match[1].trim();
+        name = name.replace(match[0], ' ');
+        break;
+      }
     }
   }
 
@@ -103,6 +124,19 @@ export function parseProductDetailsFromName(rawName: string) {
     .trim();
 
   return { name: name || rawName.trim(), article, units, price };
+}
+
+export function normalizeProductForStorage(product: Product): Product {
+  const parsed = parseProductDetailsFromName(product.name);
+  const article = productArticle(product) || parsed.article;
+  const price = String(product.price || '').trim() || parsed.price;
+  return {
+    ...product,
+    ...(article && { article }),
+    name: product.article ? String(product.name || '').trim() : parsed.name,
+    price,
+    units: productUnits({ units: product.units ?? parsed.units }),
+  };
 }
 
 export function normalizeImportedProduct(raw: ProductDraft, index: number, defaultCategory = 'Книги'): Product | null {
