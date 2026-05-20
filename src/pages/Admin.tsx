@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle, ArrowUpDown, Eye, FileWarning, Filter, ImageIcon, LayoutGrid, List, Pencil, PackageCheck } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle, ArrowUpDown, Eye, FileWarning, Filter, ImageIcon, LayoutGrid, List, Pencil, PackageCheck, GripVertical, Undo2, Redo2, Package, Image as ImageLucide, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -10,6 +10,9 @@ import type { Product } from '../data/products';
 import { categories } from '../data/products';
 import { ProductImage } from '../components/ProductImage';
 import { resolveImageUrl } from '../utils/imageUrl';
+import { AnalyticsCharts } from '../components/admin/AnalyticsCharts';
+import { OrdersManager } from '../components/admin/OrdersManager';
+import { BannersEditor } from '../components/admin/BannersEditor';
 import { formatProductMeta, normalizeImportedProduct, normalizeProductForStorage, parseDelimitedProducts, parseProductDetailsFromName, productArticle, productDisplayName, productUnits } from '../utils/productImport';
 
 const ADMIN_CATEGORIES = categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу');
@@ -271,7 +274,44 @@ export const Admin = () => {
   const [saveError, setSaveError] = useState('');
 
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections' | 'analytics' | 'orders' | 'banners'>('dashboard');
+
+  // undo/redo history
+  const [history, setHistory] = useState<Product[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const pushHistory = useCallback((snapshot: Product[]) => {
+    setHistory(prev => {
+      const next = prev.slice(0, historyIndex + 1);
+      next.push(JSON.parse(JSON.stringify(snapshot)));
+      if (next.length > 50) next.shift();
+      return next;
+    });
+    setHistoryIndex(prev => Math.min(prev + 1, 49));
+  }, [historyIndex]);
+
+  const undo = useCallback(() => {
+    if (historyIndex <= 0) return;
+    const prev = history[historyIndex - 1];
+    if (prev) {
+      setLocalProducts(prev);
+      setHistoryIndex(i => i - 1);
+      hasLocalChangesRef.current = true;
+    }
+  }, [history, historyIndex]);
+
+  const redo = useCallback(() => {
+    if (historyIndex >= history.length - 1) return;
+    const next = history[historyIndex + 1];
+    if (next) {
+      setLocalProducts(next);
+      setHistoryIndex(i => i + 1);
+      hasLocalChangesRef.current = true;
+    }
+  }, [history, historyIndex]);
+
+  // Drag & drop state
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const skipSyncRef = useRef(false);
   const hasLocalChangesRef = useRef(false);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -289,7 +329,30 @@ export const Admin = () => {
     setLocalProducts(list);
   }, [products]);
 
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
 
+  // Drag & drop handler
+  const handleDragDrop = useCallback((fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return;
+    pushHistory(localProducts);
+    setLocalProducts(prev => {
+      const next = [...prev];
+      const [item] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, item);
+      return next;
+    });
+    hasLocalChangesRef.current = true;
+    setDragIdx(null);
+    setDragOverIdx(null);
+  }, [localProducts, pushHistory]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -319,6 +382,7 @@ export const Admin = () => {
   };
 
   const handleSaveProduct = (updated: Product) => {
+    pushHistory(localProducts);
     hasLocalChangesRef.current = true;
     setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
     setNewProductIds(prev => { const s = new Set(prev); s.delete(updated.id); return s; });
@@ -335,6 +399,7 @@ export const Admin = () => {
   }, [productsList, localProducts]);
 
   const handleAddProduct = (category: string) => {
+    pushHistory(localProducts);
     hasLocalChangesRef.current = true;
     const maxId = localProducts.reduce((m, p) => Math.max(m, p.id), 0);
     const newId = maxId + 1;
@@ -355,7 +420,8 @@ export const Admin = () => {
 
   const handleDeleteProduct = (id: number, name?: string) => {
     const label = name ? `«${name.length > 40 ? name.slice(0, 40) + '…' : name}»` : 'цей товар';
-    if (confirm(`Видалити товар ${label}? Цю дію не можна скасувати.`)) {
+    if (confirm(`Видалити товар ${label}?`)) {
+      pushHistory(localProducts);
       hasLocalChangesRef.current = true;
       setNewProductIds(prev => { const s = new Set(prev); s.delete(id); return s; });
       setLocalProducts(prev => prev.filter(p => p.id !== id));
@@ -580,7 +646,7 @@ export const Admin = () => {
         <div className="sticky top-0 z-10 -mx-6 px-6 py-4 mb-8 bg-white/95 backdrop-blur-md border-b border-gray-100">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-xl flex-wrap">
                 <button onClick={() => setAdminTab('dashboard')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'dashboard' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
                   <BarChart3 className="w-4 h-4" />
                   Дашборд
@@ -588,12 +654,24 @@ export const Admin = () => {
                 <button onClick={() => setAdminTab('products')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${adminTab === 'products' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
                   Товари
                 </button>
+                <button onClick={() => setAdminTab('analytics')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'analytics' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  <BarChart3 className="w-4 h-4" />
+                  Аналітика
+                </button>
+                <button onClick={() => setAdminTab('orders')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'orders' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  <ShoppingCart className="w-4 h-4" />
+                  Замовлення
+                </button>
                 <button onClick={() => setAdminTab('sections')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'sections' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
                   <FileText className="w-4 h-4" />
-                  Розділи сайту
+                  Розділи
+                </button>
+                <button onClick={() => setAdminTab('banners')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'banners' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  <ImageLucide className="w-4 h-4" />
+                  Банери
                 </button>
               </div>
-              {adminTab !== 'sections' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
+              {adminTab === 'products' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
               {hasUnsaved && <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">Є зміни</span>}
             </div>
             <div className="flex items-center gap-2">
@@ -606,14 +684,22 @@ export const Admin = () => {
                 Вийти
               </button>
               {adminTab === 'products' && (
-                <button
-                  onClick={handleSaveAll}
-                  disabled={saving}
-                  className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-gray-800 transition-colors"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Зберегти
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={undo} disabled={historyIndex <= 0} title="Скасувати (Ctrl+Z)" className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 transition-all">
+                    <Undo2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={redo} disabled={historyIndex >= history.length - 1} title="Повторити (Ctrl+Y)" className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 transition-all">
+                    <Redo2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleSaveAll}
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-gray-800 transition-colors"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Зберегти
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -683,6 +769,12 @@ export const Admin = () => {
             onExportPdf={handleExportPdf}
             onExtractArticles={handleExtractArticles}
           />
+        ) : adminTab === 'analytics' ? (
+          <AnalyticsCharts products={localProducts} />
+        ) : adminTab === 'orders' ? (
+          <OrdersManager />
+        ) : adminTab === 'banners' ? (
+          <BannersEditor />
         ) : adminTab === 'sections' ? (
           <SiteContentEditor
             content={siteContent}
@@ -708,6 +800,11 @@ export const Admin = () => {
             onDelete={handleDeleteProduct}
             onAdd={handleAddProduct}
             getProductGradient={getProductGradient}
+            dragIdx={dragIdx}
+            dragOverIdx={dragOverIdx}
+            onDragStart={setDragIdx}
+            onDragOver={setDragOverIdx}
+            onDrop={handleDragDrop}
           />
         )}
       </div>
@@ -1220,6 +1317,11 @@ function AdminSections({
   onDelete,
   onAdd,
   getProductGradient,
+  dragIdx,
+  dragOverIdx,
+  onDragStart,
+  onDragOver,
+  onDrop,
 }: {
   localProducts: Product[];
   imagePreviews?: Record<number, string>;
@@ -1228,6 +1330,11 @@ function AdminSections({
   onDelete: (id: number, name?: string) => void;
   onAdd: (category: string) => void;
   getProductGradient: (id: number, category: string) => string;
+  dragIdx: number | null;
+  dragOverIdx: number | null;
+  onDragStart: (idx: number | null) => void;
+  onDragOver: (idx: number | null) => void;
+  onDrop: (from: number, to: number) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(ADMIN_CATEGORIES.map(c => [c, true]))
@@ -1468,10 +1575,24 @@ function AdminSections({
                       <div className="grid gap-3 lg:grid-cols-2">
                         <AnimatePresence mode="popLayout">
                         {items.map(product => {
+                          const globalIdx = localProducts.indexOf(product);
                           const productForDisplay = imagePreviews[product.id] ? { ...product, image: imagePreviews[product.id] } : product;
                           const isNew = newProductIds.has(product.id);
+                          const isDragging = dragIdx === globalIdx;
+                          const isDragOver = dragOverIdx === globalIdx;
                           return (
-                            <React.Fragment key={product.id}>
+                            <div
+                              key={product.id}
+                              draggable
+                              onDragStart={() => onDragStart(globalIdx)}
+                              onDragOver={e => { e.preventDefault(); onDragOver(globalIdx); }}
+                              onDrop={e => { e.preventDefault(); if (dragIdx !== null) onDrop(dragIdx, globalIdx); }}
+                              onDragEnd={() => { onDragStart(null); onDragOver(null); }}
+                              className={`relative ${isDragging ? 'opacity-40' : ''} ${isDragOver ? 'ring-2 ring-violet-500 ring-offset-2 rounded-2xl' : ''}`}
+                            >
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-10 cursor-grab active:cursor-grabbing p-1 text-gray-300 hover:text-gray-500">
+                                <GripVertical className="w-4 h-4" />
+                              </div>
                               <ProductAdminCard
                                 product={product}
                                 productForDisplay={productForDisplay}
@@ -1480,7 +1601,7 @@ function AdminSections({
                                 onEdit={onEdit}
                                 onDelete={onDelete}
                               />
-                            </React.Fragment>
+                            </div>
                           );
                         })}
                         </AnimatePresence>
