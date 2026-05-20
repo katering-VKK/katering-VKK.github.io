@@ -193,7 +193,7 @@ export const Footer = () => {
 
                 <div className="flex gap-3 mt-2">
                   {[
-                    { icon: Instagram, href: '#', label: 'Instagram' },
+                    { icon: Instagram, href: 'https://www.instagram.com/malyenkyi.vsesvit_/', label: 'Instagram' },
                     { icon: Facebook, href: '#', label: 'Facebook' },
                     { icon: Youtube, href: '#', label: 'YouTube' },
                   ].map(({ icon: Icon, href, label }) => (

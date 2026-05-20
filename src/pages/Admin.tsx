@@ -13,6 +13,7 @@ import { resolveImageUrl } from '../utils/imageUrl';
 import { AnalyticsCharts } from '../components/admin/AnalyticsCharts';
 import { OrdersManager } from '../components/admin/OrdersManager';
 import { BannersEditor } from '../components/admin/BannersEditor';
+import { InstagramManager } from '../components/admin/InstagramManager';
 import { formatProductMeta, normalizeImportedProduct, normalizeProductForStorage, parseDelimitedProducts, parseProductDetailsFromName, productArticle, productDisplayName, productUnits } from '../utils/productImport';
 
 const ADMIN_CATEGORIES = categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу');
@@ -274,7 +275,7 @@ export const Admin = () => {
   const [saveError, setSaveError] = useState('');
 
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections' | 'analytics' | 'orders' | 'banners'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections' | 'analytics' | 'orders' | 'banners' | 'instagram'>('dashboard');
 
   // undo/redo history
   const [history, setHistory] = useState<Product[][]>([]);
@@ -670,6 +671,10 @@ export const Admin = () => {
                   <ImageLucide className="w-4 h-4" />
                   Банери
                 </button>
+                <button onClick={() => setAdminTab('instagram')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${adminTab === 'instagram' ? 'bg-white text-black shadow-sm' : 'text-gray-600 hover:text-black'}`}>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
+                  Instagram
+                </button>
               </div>
               {adminTab === 'products' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
               {hasUnsaved && <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">Є зміни</span>}
@@ -775,6 +780,8 @@ export const Admin = () => {
           <OrdersManager />
         ) : adminTab === 'banners' ? (
           <BannersEditor />
+        ) : adminTab === 'instagram' ? (
+          <InstagramManager />
         ) : adminTab === 'sections' ? (
           <SiteContentEditor
             content={siteContent}
