@@ -228,10 +228,11 @@ export const Footer = () => {
               </div>
               <Link
                 to="/admin"
-                className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all border border-white/5"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all border border-white/5 text-xs font-bold uppercase tracking-wider"
                 aria-label="Адмін-панель"
               >
                 <Settings className="w-4 h-4" />
+                Адмін
               </Link>
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
