@@ -5,7 +5,7 @@ import { useStore } from '../store';
 import { useProducts, parsePrice } from '../context/ProductsContext';
 import { CheckoutForm } from './CheckoutForm';
 import { ProductImage } from './ProductImage';
-import { formatProductMeta } from '../utils/productImport';
+import { formatProductMeta, productDisplayName } from '../utils/productImport';
 
 type Step = 'cart' | 'checkout' | 'thanks';
 
@@ -124,7 +124,7 @@ export const CartDrawer = () => {
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
                             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{latest.category}</p>
-                            <h4 className="text-sm font-bold leading-tight truncate">{latest.name}</h4>
+                            <h4 className="text-sm font-bold leading-tight truncate">{productDisplayName(latest)}</h4>
                             {formatProductMeta(latest) && <p className="text-[11px] text-gray-400 truncate">{formatProductMeta(latest)}</p>}
                           </div>
                           <div className="flex items-center justify-between">

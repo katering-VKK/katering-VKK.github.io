@@ -5,7 +5,7 @@ import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import type { Product } from '../data/products';
 import { ProductImage } from './ProductImage';
-import { formatProductMeta } from '../utils/productImport';
+import { formatProductMeta, productDisplayName } from '../utils/productImport';
 
 export const ProductQuickView = () => {
   const { products } = useProducts();
@@ -71,7 +71,7 @@ export const ProductQuickView = () => {
               <div className="flex justify-between items-start gap-3 mb-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{product.category}</p>
-                  <h3 className="text-lg sm:text-xl font-bold leading-tight break-words">{product.name}</h3>
+                  <h3 className="text-lg sm:text-xl font-bold leading-tight break-words">{productDisplayName(product)}</h3>
                 </div>
                 <button
                   onClick={() => setQuickViewProduct(null)}
@@ -150,7 +150,7 @@ export const ProductQuickView = () => {
                     <div className="w-full aspect-square rounded-xl overflow-hidden transition-transform group-hover:scale-105 group-active:scale-95">
                       <ProductImage product={p} className="w-full h-full" imgClassName="w-full h-full object-cover" letterSize="sm" />
                     </div>
-                    <p className="text-xs font-bold truncate w-full">{p.name}</p>
+                    <p className="text-xs font-bold truncate w-full">{productDisplayName(p)}</p>
                     <p className="text-xs font-semibold text-gray-500">{p.price}</p>
                   </button>
                 ))}
