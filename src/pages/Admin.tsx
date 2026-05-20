@@ -28,7 +28,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 const ADMIN_KEY = 'lumu_admin';
 const PRODUCTS_STORAGE_KEY = 'lumu_admin_products';
 const SITE_CONTENT_STORAGE_KEY = 'lumu_admin_site_content';
-const ADMIN_PASSWORD = 'admin2024';
+const ADMIN_PASSWORD = 'tmUVDy4pb%pWyr4h';
 
 const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 const exportDate = () => new Date().toISOString().slice(0, 10);
