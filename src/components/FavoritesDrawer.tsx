@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import { ProductImage } from './ProductImage';
+import { formatProductMeta, productDisplayName } from '../utils/productImport';
 
 export const FavoritesDrawer = () => {
   const { favorites, isFavOpen, setFavOpen, toggleFavorite, addToCart } = useStore();
@@ -73,7 +74,8 @@ export const FavoritesDrawer = () => {
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
                           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
-                          <h4 className="text-sm font-bold leading-tight truncate">{product.name}</h4>
+                          <h4 className="text-sm font-bold leading-tight truncate">{productDisplayName(product)}</h4>
+                          {formatProductMeta(product) && <p className="text-[11px] text-gray-400 truncate">{formatProductMeta(product)}</p>}
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-bold">{product.price}</span>

@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
 import { ProductImage } from './ProductImage';
+import { formatProductMeta, productArticle, productDisplayName } from '../utils/productImport';
 
 export const SearchOverlay = () => {
   const { products } = useProducts();
@@ -36,7 +37,8 @@ export const SearchOverlay = () => {
     if (query.length < 2) return [];
     const q = query.toLowerCase();
     return products.filter(p =>
-      (p.name || '').toLowerCase().includes(q) ||
+      productDisplayName(p).toLowerCase().includes(q) ||
+      productArticle(p).toLowerCase().includes(q) ||
       (p.category || '').toLowerCase().includes(q) ||
       (p.tag || '').toLowerCase().includes(q)
     ).slice(0, 12);
@@ -129,7 +131,8 @@ export const SearchOverlay = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">{product.category}</p>
-                            <p className="text-sm font-bold truncate group-hover:text-purple-600 transition-colors">{product.name}</p>
+                            <p className="text-sm font-bold truncate group-hover:text-purple-600 transition-colors">{productDisplayName(product)}</p>
+                            {formatProductMeta(product) && <p className="text-[11px] text-gray-400 truncate">{formatProductMeta(product)}</p>}
                             <p className="text-sm text-gray-500 font-semibold">{product.price}</p>
                           </div>
                         </button>

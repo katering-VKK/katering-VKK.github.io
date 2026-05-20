@@ -37,17 +37,18 @@ export function productArticle(product: Pick<Product, 'article'> & Partial<Pick<
 }
 
 export function productDisplayName(product: Pick<Product, 'name'> & Partial<Pick<Product, 'article'>>): string {
-  if (product.article) return String(product.name || '').trim();
   return parseProductDetailsFromName(product.name).name;
 }
 
 export function formatProductMeta(product: Pick<Product, 'article' | 'units'> & Partial<Pick<Product, 'name'>>): string {
   const parts: string[] = [];
+  const parsed = product.name ? parseProductDetailsFromName(product.name) : { details: [] as string[] };
   const article = productArticle(product);
   if (article) parts.push(`Арт. ${article}`);
+  if ('details' in parsed) parts.push(...parsed.details);
   const units = productUnits(product);
   if (units > 1) parts.push(`${units} од.`);
-  return parts.join(' · ');
+  return Array.from(new Set(parts.filter(Boolean))).join(' · ');
 }
 
 function detectCategory(text: string, fallback: string): string {
@@ -78,15 +79,38 @@ function normalizePrice(value: unknown): string {
 }
 
 export function parseProductDetailsFromName(rawName: string) {
-  let name = String(rawName ?? '').trim();
+  const raw = String(rawName ?? '').trim();
+  let name = raw;
   let article = '';
   let units = DEFAULT_PRODUCT_UNITS;
   let price = '';
+  const details: string[] = [];
 
-  const leadingMatch = name.match(/^([A-Za-zА-Яа-яІіЇїЄєҐґ0-9._/-]{3,32})\s*(?:[;:|]|[-–—]|\.\.?)\s+(.+)$/);
-  if (leadingMatch && isLikelyArticle(leadingMatch[1])) {
-    article = leadingMatch[1].replace(/[.;:,|/-]+$/g, '').trim();
-    name = leadingMatch[2].trim();
+  const semicolonParts = raw.split(';').map(part => part.trim()).filter(Boolean);
+  if (semicolonParts.length > 1) {
+    const first = semicolonParts[0].replace(/[.;:,|/-]+$/g, '').trim();
+    if (isLikelyArticle(first)) {
+      article = first;
+      name = semicolonParts[1] ?? '';
+      details.push(...semicolonParts.slice(2));
+    } else {
+      name = semicolonParts[0];
+      details.push(...semicolonParts.slice(1));
+    }
+  }
+
+  const leadingPatterns = [
+    /^([A-Za-zА-Яа-яІіЇїЄєҐґ0-9._/-]{3,32})\s*(?:[;:|]|\.\.?|[-–—])\s+(.+)$/,
+    /^([0-9]{3,}[-/][0-9]+)\s*(?=[A-Za-zА-Яа-яІіЇїЄєҐґ])(.+)$/,
+    /^([0-9]{3,}[A-Za-zА-Яа-яІіЇїЄєҐґ]?)\s+(.+)$/,
+  ];
+  for (const pattern of leadingPatterns) {
+    const leadingMatch = name.match(pattern);
+    if (leadingMatch && isLikelyArticle(leadingMatch[1])) {
+      article = article || leadingMatch[1].replace(/[.;:,|/-]+$/g, '').trim();
+      name = leadingMatch[2].trim();
+      break;
+    }
   }
 
   const articlePatterns = [
@@ -101,6 +125,16 @@ export function parseProductDetailsFromName(rawName: string) {
         name = name.replace(match[0], ' ');
         break;
       }
+    }
+  }
+
+  const trailingCodePattern = /(?:^|[\s,;])([0-9]{4,}[A-Za-zА-Яа-яІіЇїЄєҐґ]?)(?:\s*\(([^)]{1,24})\))?$/;
+  const trailingCodeMatch = name.match(trailingCodePattern);
+  if (trailingCodeMatch) {
+    const code = trailingCodeMatch[1].trim();
+    if (isLikelyArticle(code) && code !== article) {
+      details.push(`Код ${code}${trailingCodeMatch[2] ? ` (${trailingCodeMatch[2].trim()})` : ''}`);
+      name = name.slice(0, trailingCodeMatch.index).trim();
     }
   }
 
@@ -119,11 +153,24 @@ export function parseProductDetailsFromName(rawName: string) {
   }
 
   name = name
-    .replace(/\s*[-–—|;/]\s*/g, ' ')
+    .replace(/\s*[–—|;/]\s*/g, ' ')
+    .replace(/\s+-\s+/g, ' ')
+    .replace(/([а-яіїєґa-z])\.([А-ЯІЇЄҐA-Z])/g, '$1. $2')
+    .replace(/([A-Za-zА-Яа-яІіЇїЄєҐґ])\(/g, '$1 (')
+    .replace(/\s+([:,.!?])/g, '$1')
+    .replace(/([:,.!?])(?=[^\s)\]])/g, '$1 ')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  return { name: name || rawName.trim(), article, units, price };
+  return {
+    name: name || raw.trim(),
+    article,
+    units,
+    price,
+    details: details
+      .map(detail => String(detail).replace(/[;|]+$/g, '').replace(/\s{2,}/g, ' ').trim())
+      .filter(Boolean),
+  };
 }
 
 export function normalizeProductForStorage(product: Product): Product {
@@ -133,7 +180,7 @@ export function normalizeProductForStorage(product: Product): Product {
   return {
     ...product,
     ...(article && { article }),
-    name: product.article ? String(product.name || '').trim() : parsed.name,
+    name: parsed.name,
     price,
     units: productUnits({ units: product.units ?? parsed.units }),
   };

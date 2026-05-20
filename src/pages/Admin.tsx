@@ -1768,7 +1768,7 @@ function ProductAdminCard({ product, productForDisplay, isNew, gradient, onEdit,
                 <p className="font-bold text-gray-900 leading-snug line-clamp-2">{productDisplayName(product)}</p>
                 {isNew && <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 rounded-full">Новий</span>}
               </div>
-              <p className="text-sm text-gray-500 mt-1 truncate">#{product.id}{productArticle(product) ? ` · арт. ${productArticle(product)}` : ''}</p>
+              <p className="text-sm text-gray-500 mt-1 truncate">#{product.id}{formatProductMeta(product) ? ` · ${formatProductMeta(product)}` : ''}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
@@ -1842,7 +1842,7 @@ function ProductAdminTable({ products, imagePreviews, newProductIds, onEdit, onD
                         <p className="font-bold text-gray-900 truncate max-w-[280px]">{productDisplayName(product)}</p>
                         {newProductIds.has(product.id) && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase">Новий</span>}
                       </div>
-                      <p className="text-xs text-gray-400">#{product.id} · {product.category}</p>
+                      <p className="text-xs text-gray-400 truncate">#{product.id} · {product.category}{formatProductMeta(product) ? ` · ${formatProductMeta(product)}` : ''}</p>
                     </div>
                   </div>
                 </td>
@@ -1897,7 +1897,7 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
   onImagePreview?: (productId: number, dataUrl: string | null) => void;
   apiUrl: string; authToken: string;
 }) {
-  const [form, setForm] = useState<Product>(() => ({ ...product, units: productUnits(product) }));
+  const [form, setForm] = useState<Product>(() => ({ ...normalizeProductForStorage(product), units: productUnits(product) }));
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState('');
@@ -1905,7 +1905,7 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setForm({ ...product, units: productUnits(product) });
+    setForm({ ...normalizeProductForStorage(product), units: productUnits(product) });
     setPreviewDataUrl(null);
     setImgError('');
     setValidationError('');
