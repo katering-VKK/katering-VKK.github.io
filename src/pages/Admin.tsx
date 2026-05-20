@@ -23,19 +23,9 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ADMIN_KEY = 'lumu_admin';
-const DEFAULT_API = 'https://lumu-pearl.vercel.app/api';
-const getApiUrl = () => {
-  const admin = (import.meta.env.VITE_ADMIN_API_URL || '').replace(/\/$/, '');
-  if (admin) return admin;
-  const telegram = (import.meta.env.VITE_TELEGRAM_API_URL || '').replace(/\/telegram\/?$/, '').replace(/\/$/, '');
-  if (telegram) return telegram;
-  if (typeof window !== 'undefined') {
-    const o = window.location.origin;
-    return o + '/api';
-  }
-  return DEFAULT_API;
-};
-const API_URL = getApiUrl();
+const PRODUCTS_STORAGE_KEY = 'lumu_admin_products';
+const SITE_CONTENT_STORAGE_KEY = 'lumu_admin_site_content';
+const ADMIN_PASSWORD = 'admin2024';
 
 const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 const exportDate = () => new Date().toISOString().slice(0, 10);
@@ -276,12 +266,10 @@ export const Admin = () => {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState<'checking' | 'ok' | 'no-token' | 'error'>('checking');
-  const [uploadOk, setUploadOk] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [uploadTest, setUploadTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; msg?: string }>({ status: 'idle' });
+
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections'>('dashboard');
   const skipSyncRef = useRef(false);
@@ -289,27 +277,7 @@ export const Admin = () => {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviews, setImagePreviews] = useState<Record<number, string>>({});
 
-  const testUpload = async () => {
-    if (!auth?.token || !API_URL) return;
-    setUploadTest({ status: 'testing' });
-    const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-    const token = (auth.token || '').trim();
-    try {
-      const res = await fetch(`${API_URL}/admin/upload-image`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ base64: pixel, productId: 99999, ext: 'jpg', token, dryRun: true }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.ok) {
-        setUploadTest({ status: 'ok', msg: 'Фото працює' });
-      } else {
-        setUploadTest({ status: 'fail', msg: data.error || `HTTP ${res.status}` });
-      }
-    } catch (e) {
-      setUploadTest({ status: 'fail', msg: (e as Error).message });
-    }
-  };
+
 
   useEffect(() => {
     if (skipSyncRef.current) {
@@ -321,20 +289,7 @@ export const Admin = () => {
     setLocalProducts(list);
   }, [products]);
 
-  useEffect(() => {
-    if (!API_URL) return;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000);
-    fetch(`${API_URL}/admin/health`, { signal: ctrl.signal })
-      .then(r => r.json())
-      .then(d => {
-        setApiStatus(d?.configured ? 'ok' : 'no-token');
-        setUploadOk(!!d?.uploadOk);
-      })
-      .catch(() => setApiStatus('error'))
-      .finally(() => clearTimeout(t));
-    return () => { ctrl.abort(); clearTimeout(t); };
-  }, [API_URL]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,25 +299,16 @@ export const Admin = () => {
     }
     setLoginError('');
     setLoginLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/admin/auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: password.trim() }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.ok && data.token) {
-        sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token: data.token }));
-        setAuth({ token: data.token });
-        setPassword('');
-      } else {
-        setLoginError(data.error || 'Невірний пароль');
-      }
-    } catch (err) {
-      setLoginError('Помилка з\'єднання. Перевірте CORS чи API URL.');
-    } finally {
-      setLoginLoading(false);
+    await new Promise(r => setTimeout(r, 300));
+    if (password.trim() === ADMIN_PASSWORD) {
+      const token = 'local-' + Date.now();
+      sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token }));
+      setAuth({ token });
+      setPassword('');
+    } else {
+      setLoginError('Невірний пароль');
     }
+    setLoginLoading(false);
   };
 
   const handleLogout = () => {
@@ -570,132 +516,19 @@ export const Admin = () => {
     setSaveError('');
     setSaving(true);
     try {
-      let payload = productExportPayload(localProducts);
-      const failedUploadIds = new Set<number>();
-      let strippedCount = 0;
-      for (let i = 0; i < payload.length; i++) {
-        const img = payload[i].image;
-        if (img && img.startsWith('data:image/')) {
-          const rawBase64 = img.replace(/^data:image\/\w+;base64,/, '').replace(/\s/g, '');
-          if (rawBase64.length > 800_000) {
-            payload[i] = { ...payload[i], image: undefined };
-            failedUploadIds.add(payload[i].id);
-            strippedCount++;
-            continue;
-          }
-          let upRes: Response | null = null;
-          let upData: { ok?: boolean; url?: string; error?: string } = {};
-          const uploadToken = (auth?.token ?? '').trim();
-          const doUpload = async (): Promise<boolean> => {
-            const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), 35000);
-            try {
-              upRes = await fetch(`${API_URL}/admin/upload-image`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${uploadToken}`,
-                },
-                body: JSON.stringify({ base64: rawBase64, productId: payload[i].id, ext: 'jpg', token: uploadToken }),
-                signal: ctrl.signal,
-              });
-              clearTimeout(t);
-              upData = await upRes.json().catch(() => ({}));
-              return upData.ok === true && !!upData.url;
-            } catch {
-              clearTimeout(t);
-              return false;
-            }
-          };
-          try {
-            let ok = await doUpload();
-            if (!ok && (upRes === null || (upRes?.status ?? 0) >= 500)) {
-              await new Promise(r => setTimeout(r, 2000));
-              ok = await doUpload();
-            }
-            if (ok && upData.url) {
-              payload[i] = { ...payload[i], image: upData.url };
-            } else {
-              payload[i] = { ...payload[i], image: undefined };
-              failedUploadIds.add(payload[i].id);
-              strippedCount++;
-              const errMsg = upData.error || (upRes ? `HTTP ${upRes.status}` : 'Мережа недоступна. Перевірте API URL.');
-              setSaveError(prev => (prev ? prev + '; ' : '') + `Товар #${payload[i].id}: ${errMsg}`);
-            }
-          } catch (err) {
-            payload[i] = { ...payload[i], image: undefined };
-            failedUploadIds.add(payload[i].id);
-            strippedCount++;
-            setSaveError(prev => (prev ? prev + '; ' : '') + `Товар #${payload[i].id}: ${(err as Error).message || 'Помилка мережі'}`);
-          }
-        }
-      }
-      const cacheBust = Date.now();
-      const toSend = payload.map(p => {
-        let img = p.image;
-        if (img && img.startsWith('data:')) return { ...p, image: undefined };
-        if (img && typeof img === 'string' && !img.startsWith('data:')) {
-          const base = img.split('?')[0];
-          img = `${base}?t=${cacheBust}`;
-        }
-        return { ...p, image: img || undefined };
-      });
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
-      const token = (auth?.token ?? '').trim();
-      const res = await fetch(`${API_URL}/admin/products`, {
-        method: 'PUT',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ products: toSend, token }),
-      });
-      clearTimeout(timeout);
-      const text = await res.text();
-      let data: { ok?: boolean; error?: string } = {};
-      try {
-        data = JSON.parse(text);
-      } catch {
-        setSaveError(text || `HTTP ${res.status}`);
-        return;
-      }
-      if (data.ok) {
-        const merged = payload.map(p => {
-          if (failedUploadIds.has(p.id)) {
-            const orig = localProducts.find(op => op.id === p.id);
-            return { ...p, image: orig?.image ?? p.image };
-          }
-          return p;
-        });
-        setLocalProducts(merged);
-        setNewProductIds(new Set());
-        skipSyncRef.current = true;
-        hasLocalChangesRef.current = false;
-        if (strippedCount === 0) setSaveError('');
-        refetch().catch(() => {}); // оновлюємо контекст у фоні; skipSyncRef не дасть перезаписати localProducts
-        showToast(strippedCount > 0 ? `Збережено. ${strippedCount} фото не завантажилось — перевірте помилку вище` : 'Збережено в GitHub');
-      } else {
-        if (res.status === 401) handleLogout();
-        setSaveError(data.error || `Помилка ${res.status}`);
-      }
+      const payload = productExportPayload(localProducts);
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(payload));
+      setNewProductIds(new Set());
+      skipSyncRef.current = true;
+      hasLocalChangesRef.current = false;
+      refetch().catch(() => {});
+      showToast('Збережено локально');
     } catch (err) {
-      const msg = (err as Error).message || 'Помилка з\'єднання';
-      setSaveError(msg + (msg.includes('fetch') ? ` (API: ${API_URL})` : ''));
+      setSaveError((err as Error).message || 'Помилка збереження');
     } finally {
       setSaving(false);
     }
   };
-
-  if (!API_URL) {
-    return (
-      <div className="min-h-screen pt-12 px-6 flex flex-col items-center justify-center">
-        <p className="text-gray-500">Адмін-панель не налаштована (відсутній API)</p>
-        <Link to="/" className="mt-4 text-violet-600 hover:underline">На головну</Link>
-      </div>
-    );
-  }
 
   if (!auth) {
     return (
@@ -719,7 +552,7 @@ export const Admin = () => {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Пароль (ADMIN_TOKEN з Vercel)"
+              placeholder="Пароль адміністратора"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-500"
               autoFocus
             />
@@ -733,23 +566,8 @@ export const Admin = () => {
               Увійти
             </button>
           </form>
-          {apiStatus === 'no-token' && (
-            <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              ADMIN_TOKEN не налаштований у Vercel. Додайте → Redeploy.
-            </p>
-          )}
-          {apiStatus === 'error' && (
-            <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              API недоступний. Додайте VITE_ADMIN_API_URL або VITE_TELEGRAM_API_URL = https://lumu-pearl.vercel.app/api
-            </p>
-          )}
-          {apiStatus === 'ok' && !uploadOk && (
-            <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-              Фото не завантажуватимуться: GITHUB_TOKEN у Vercel
-            </p>
-          )}
           <p className="mt-4 text-xs text-gray-400 text-center">
-            Пароль = <code className="bg-gray-100 px-1.5 py-0.5 rounded">ADMIN_TOKEN</code> з Vercel
+            Локальна адмін-панель
           </p>
         </div>
       </div>
@@ -777,7 +595,6 @@ export const Admin = () => {
               </div>
               {adminTab !== 'sections' && <span className="text-sm text-gray-500">{totalProducts} товарів</span>}
               {hasUnsaved && <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">Є зміни</span>}
-              {apiStatus === 'ok' && <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle className="w-3.5 h-3.5" /> API</span>}
             </div>
             <div className="flex items-center gap-2">
               <Link to="/" target="_blank" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-black px-3 py-2 rounded-lg hover:bg-gray-100">
@@ -795,7 +612,7 @@ export const Admin = () => {
                   className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-gray-800 transition-colors"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Зберегти в GitHub
+                  Зберегти
                 </button>
               )}
             </div>
@@ -810,14 +627,7 @@ export const Admin = () => {
             </button>
           </div>
         )}
-        {uploadTest.status !== 'idle' && (
-          <div className={`mb-6 p-4 rounded-xl text-sm flex items-center justify-between ${uploadTest.status === 'ok' ? 'bg-green-50 text-green-700' : uploadTest.status === 'fail' ? 'bg-amber-50 text-amber-800' : 'bg-gray-50 text-gray-600'}`}>
-            <span>{uploadTest.status === 'testing' ? 'Тест завантаження...' : uploadTest.status === 'ok' ? uploadTest.msg : <>{uploadTest.msg}. <a href={`${API_URL}/admin/health`} target="_blank" rel="noreferrer" className="underline">API health</a></>}</span>
-            {uploadTest.status !== 'testing' && (
-              <button onClick={() => setUploadTest({ status: 'idle' })} className="text-xs underline shrink-0">Закрити</button>
-            )}
-          </div>
-        )}
+
         {adminTab === 'products' && (
           <div className="mb-6 flex flex-wrap items-center gap-3">
             <button onClick={handleExportProducts} className="flex items-center gap-2 text-sm text-gray-600 hover:text-black px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">
@@ -853,17 +663,13 @@ export const Admin = () => {
               Автозавантажити товари
               <input ref={importInputRef} type="file" accept=".json,.csv,.txt,application/json,text/csv,text/plain" className="hidden" onChange={handleImportProducts} />
             </label>
-            <button onClick={testUpload} disabled={uploadTest.status === 'testing'} className="text-sm text-gray-500 hover:text-black underline disabled:opacity-50">
-              Тест завантаження фото
-            </button>
+
           </div>
         )}
 
         {adminTab === 'dashboard' ? (
           <AdminDashboard
             localProducts={localProducts}
-            apiStatus={apiStatus}
-            uploadOk={uploadOk}
             hasUnsaved={hasUnsaved}
             onOpenProducts={() => setAdminTab('products')}
             onOpenSections={() => setAdminTab('sections')}
@@ -881,9 +687,6 @@ export const Admin = () => {
           <SiteContentEditor
             content={siteContent}
             onSave={refetchSiteContent}
-            apiUrl={API_URL}
-            authToken={auth?.token ?? ''}
-            onUnauthorized={handleLogout}
           />
         ) : loading ? (
           <div className="py-16 space-y-4">
@@ -922,9 +725,6 @@ export const Admin = () => {
             setEditing(updated);
           }}
           onImagePreview={(productId, dataUrl) => setImagePreviews(prev => dataUrl ? { ...prev, [productId]: dataUrl } : (() => { const next = { ...prev }; delete next[productId]; return next; })())}
-          onUnauthorized={handleLogout}
-          apiUrl={API_URL}
-          authToken={auth?.token ?? ''}
         />
         )}
       </AnimatePresence>
@@ -938,8 +738,6 @@ function formatAdminMoney(value: number) {
 
 function AdminDashboard({
   localProducts,
-  apiStatus,
-  uploadOk,
   hasUnsaved,
   onOpenProducts,
   onOpenSections,
@@ -954,8 +752,6 @@ function AdminDashboard({
   onExtractArticles,
 }: {
   localProducts: Product[];
-  apiStatus: 'checking' | 'ok' | 'no-token' | 'error';
-  uploadOk: boolean;
   hasUnsaved: boolean;
   onOpenProducts: () => void;
   onOpenSections: () => void;
@@ -992,8 +788,7 @@ function AdminDashboard({
     return { categoryRows, noArticle, noImage, noDescription, totalUnits, totalValue, tagged };
   }, [localProducts]);
 
-  const apiLabel = apiStatus === 'ok' ? 'API працює' : apiStatus === 'checking' ? 'API перевіряється' : apiStatus === 'no-token' ? 'Немає ADMIN_TOKEN' : 'API недоступний';
-  const apiTone = apiStatus === 'ok' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-800 border-amber-100';
+
 
   return (
     <div className="space-y-6">
@@ -1002,7 +797,7 @@ function AdminDashboard({
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-violet-200 mb-2">Lumu admin</p>
             <h1 className="text-3xl md:text-4xl font-black tracking-tight">Дашборд товарів</h1>
-            <p className="text-sm text-white/60 mt-2 max-w-xl">Швидкий зріз каталогу, заповненості карток і готовності API перед збереженням змін.</p>
+            <p className="text-sm text-white/60 mt-2 max-w-xl">Швидкий зріз каталогу та заповненості карток.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={onExtractArticles} className="px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-400 transition-colors">Витягнути артикули</button>
@@ -1072,22 +867,16 @@ function AdminDashboard({
             {hasUnsaved && (
               <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-100">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                <p className="text-sm font-medium">Є незбережені зміни. Натисни «Зберегти в GitHub» у вкладці товарів.</p>
+                <p className="text-sm font-medium">Є незбережені зміни. Натисни «Зберегти» у вкладці товарів.</p>
               </div>
             )}
           </div>
         </section>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className={`rounded-2xl border p-4 ${apiTone}`}>
-          <p className="text-sm font-bold">{apiLabel}</p>
-          <p className="text-xs mt-1 opacity-80">Статус адмінського API для авторизації, товарів і розділів сайту.</p>
-        </div>
-        <div className={`rounded-2xl border p-4 ${uploadOk ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
-          <p className="text-sm font-bold">{uploadOk ? 'Фото налаштовані' : 'Фото потребують перевірки'}</p>
-          <p className="text-xs mt-1 opacity-80">Dry-run тест більше не створює товар 99999 у репозиторії.</p>
-        </div>
+      <div className="rounded-2xl border p-4 bg-emerald-50 text-emerald-700 border-emerald-100">
+        <p className="text-sm font-bold">Локальний режим</p>
+        <p className="text-xs mt-1 opacity-80">Дані зберігаються в браузері (localStorage). Використовуйте «Вигрузити JSON» для резервної копії.</p>
       </div>
     </div>
   );
@@ -1202,12 +991,9 @@ function AdminSection({ id, title, isOpen, onToggle, children }: { id: string; t
   );
 }
 
-function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized }: {
+function SiteContentEditor({ content, onSave }: {
   content: import('../context/SiteContentContext').SiteContent;
   onSave: () => void;
-  apiUrl: string;
-  authToken: string;
-  onUnauthorized?: () => void;
 }) {
   const [form, setForm] = useState(() => JSON.parse(JSON.stringify(content)));
   const [saving, setSaving] = useState(false);
@@ -1227,22 +1013,11 @@ function SiteContentEditor({ content, onSave, apiUrl, authToken, onUnauthorized 
     if (saving) return;
     setError('');
     setSaving(true);
-    const token = authToken.trim();
     try {
-      const res = await fetch(`${apiUrl}/admin/site-content`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ content: form, token }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.ok) {
-        setOk(true);
-        onSave();
-        setTimeout(() => setOk(false), 3000);
-      } else {
-        if (res.status === 401) onUnauthorized?.();
-        setError(data.error || `HTTP ${res.status}`);
-      }
+      localStorage.setItem(SITE_CONTENT_STORAGE_KEY, JSON.stringify(form));
+      setOk(true);
+      onSave();
+      setTimeout(() => setOk(false), 3000);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -1891,11 +1666,10 @@ function ProductAdminTable({ products, imagePreviews, newProductIds, onEdit, onD
   );
 }
 
-function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, onFormChange, onImagePreview, apiUrl, authToken }: {
-  product: Product; onSave: (p: Product) => void; onDelete?: () => void; onClose: () => void; onUnauthorized?: () => void;
+function ProductEditModal({ product, onSave, onDelete, onClose, onFormChange, onImagePreview }: {
+  product: Product; onSave: (p: Product) => void; onDelete?: () => void; onClose: () => void;
   onFormChange?: (p: Product) => void;
   onImagePreview?: (productId: number, dataUrl: string | null) => void;
-  apiUrl: string; authToken: string;
 }) {
   const [form, setForm] = useState<Product>(() => ({ ...normalizeProductForStorage(product), units: productUnits(product) }));
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
@@ -1960,60 +1734,15 @@ function ProductEditModal({ product, onSave, onDelete, onClose, onUnauthorized, 
     e.target.value = '';
     setImgError('');
     setLoading(true);
-    let dataUrl: string;
     try {
-      dataUrl = await resizeAndEncode(file);
-      const rawBase64 = dataUrl.replace(/^data:image\/\w+;base64,/, '');
-      if (apiUrl && authToken) {
-        const res = await fetch(`${apiUrl}/admin/upload-image`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            base64: rawBase64,
-            productId: product.id,
-            ext: 'jpg',
-            token: authToken,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (data.ok && data.url) {
-          const updated = { ...form, image: data.url };
-          setForm(updated);
-          setPreviewDataUrl(dataUrl);
-          onFormChange?.(updated);
-          onImagePreview?.(product.id, dataUrl);
-        } else {
-          const updated = { ...form, image: dataUrl };
-          setForm(updated);
-          setPreviewDataUrl(null);
-          onFormChange?.(updated);
-          onImagePreview?.(product.id, dataUrl);
-          if (res.status === 401) onUnauthorized?.();
-          const errMsg = data.error || `HTTP ${res.status}`;
-          setImgError(`Завантаження не вдалося: ${errMsg}. Фото збережено локально — натисніть «Зберегти в GitHub» для повторної спроби.`);
-        }
-      } else {
-        const updated = { ...form, image: dataUrl };
-        setForm(updated);
-        setPreviewDataUrl(null);
-        onFormChange?.(updated);
-        onImagePreview?.(product.id, dataUrl);
-      }
+      const dataUrl = await resizeAndEncode(file);
+      const updated = { ...form, image: dataUrl };
+      setForm(updated);
+      setPreviewDataUrl(dataUrl);
+      onFormChange?.(updated);
+      onImagePreview?.(product.id, dataUrl);
     } catch (err) {
-      try {
-        dataUrl = await resizeAndEncode(file);
-        const updated = { ...form, image: dataUrl };
-        setForm(updated);
-        setPreviewDataUrl(null);
-        onFormChange?.(updated);
-        onImagePreview?.(product.id, dataUrl);
-        setImgError('Фото збережено — натисніть «Зберегти в GitHub»');
-      } catch {
-        setImgError((err as Error).message || 'Помилка');
-      }
+      setImgError((err as Error).message || 'Помилка');
     } finally {
       setLoading(false);
     }
