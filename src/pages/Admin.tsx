@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle, ArrowUpDown, Eye, FileWarning, Filter, ImageIcon, LayoutGrid, List, Pencil, PackageCheck, GripVertical, Undo2, Redo2, Package, Image as ImageLucide, ShoppingCart } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle, ArrowUpDown, Eye, FileWarning, Filter, ImageIcon, LayoutGrid, List, Pencil, PackageCheck, GripVertical, Undo2, Redo2, Package, Image as ImageLucide, ShoppingCart, Activity, Bot, CalendarCheck, ClipboardCheck, Gauge, MapPin, Target, TrendingUp, Users, Wand2, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -11,10 +11,11 @@ import { categories } from '../data/products';
 import { ProductImage } from '../components/ProductImage';
 import { resolveImageUrl } from '../utils/imageUrl';
 import { AnalyticsCharts } from '../components/admin/AnalyticsCharts';
-import { OrdersManager } from '../components/admin/OrdersManager';
+import { OrdersManager, type Order, type OrderStatus } from '../components/admin/OrdersManager';
 import { BannersEditor } from '../components/admin/BannersEditor';
 import { InstagramManager } from '../components/admin/InstagramManager';
 import { formatProductMeta, normalizeImportedProduct, normalizeProductForStorage, parseDelimitedProducts, parseProductDetailsFromName, productArticle, productDisplayName, productUnits } from '../utils/productImport';
+import { adminApiBase, adminLogin, fetchOrders } from '../utils/ordersApi';
 
 const ADMIN_CATEGORIES = categories.filter(c => c !== 'Всі' && c !== 'Хіт продажу');
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -29,7 +30,10 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 const ADMIN_KEY = 'lumu_admin';
 const PRODUCTS_STORAGE_KEY = 'lumu_admin_products';
 const SITE_CONTENT_STORAGE_KEY = 'lumu_admin_site_content';
-const ADMIN_PASSWORD = 'tmUVDy4pb%pWyr4h';
+const ORDERS_STORAGE_KEY = 'lumu_admin_orders';
+// Пароль адмінки більше НЕ зберігається в коді сайту — звіряється на Cloudflare Worker
+// (POST /login → сесійний токен). Локальний фолбек нижче працює лише в dev-режимі.
+const DEV_FALLBACK_PASSWORD = 'dev';
 
 const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 const exportDate = () => new Date().toISOString().slice(0, 10);
@@ -357,20 +361,37 @@ export const Admin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim()) {
+    const value = password.trim();
+    if (!value) {
       setLoginError('Введіть пароль');
       return;
     }
     setLoginError('');
     setLoginLoading(true);
-    await new Promise(r => setTimeout(r, 300));
-    if (password.trim() === ADMIN_PASSWORD) {
-      const token = 'local-' + Date.now();
-      sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token }));
-      setAuth({ token });
+
+    // Dev-фолбек: коли API не налаштовано локально (vite dev). У прод-збірці
+    // import.meta.env.DEV === false, тож ця гілка та пароль вирізаються з бандла.
+    if (import.meta.env.DEV && !adminApiBase()) {
+      await new Promise(r => setTimeout(r, 200));
+      if (value === DEV_FALLBACK_PASSWORD) {
+        const token = 'dev-' + Date.now();
+        sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token }));
+        setAuth({ token });
+        setPassword('');
+      } else {
+        setLoginError('DEV-режим: пароль «dev» (бекенд не налаштовано)');
+      }
+      setLoginLoading(false);
+      return;
+    }
+
+    const result = await adminLogin(value);
+    if (result.ok && result.token) {
+      sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token: result.token }));
+      setAuth({ token: result.token });
       setPassword('');
     } else {
-      setLoginError('Невірний пароль');
+      setLoginError(result.error || 'Невірний пароль');
     }
     setLoginLoading(false);
   };
@@ -428,6 +449,18 @@ export const Admin = () => {
       setLocalProducts(prev => prev.filter(p => p.id !== id));
       setEditing(null);
     }
+  };
+
+  const handleBulkUpdateProducts = (ids: number[], updater: (product: Product) => Product, label: string) => {
+    const targetIds = new Set(ids);
+    if (targetIds.size === 0) {
+      showToast('Немає товарів для масової дії', 'info');
+      return;
+    }
+    pushHistory(localProducts);
+    hasLocalChangesRef.current = true;
+    setLocalProducts(prev => prev.map(product => targetIds.has(product.id) ? updater(product) : product));
+    showToast(`${label}: ${targetIds.size.toLocaleString('uk-UA')} товарів. Натисніть «Зберегти».`);
   };
 
   const handleExportProducts = () => {
@@ -825,6 +858,10 @@ export const Admin = () => {
             hasUnsaved={hasUnsaved}
             onOpenProducts={() => setAdminTab('products')}
             onOpenSections={() => setAdminTab('sections')}
+            onOpenAnalytics={() => setAdminTab('analytics')}
+            onOpenOrders={() => setAdminTab('orders')}
+            onOpenBanners={() => setAdminTab('banners')}
+            onOpenInstagram={() => setAdminTab('instagram')}
             onExportProducts={handleExportProducts}
             onExportProductsCsv={handleExportProductsCsv}
             onExportReport={handleExportReport}
@@ -838,7 +875,7 @@ export const Admin = () => {
         ) : adminTab === 'analytics' ? (
           <AnalyticsCharts products={localProducts} />
         ) : adminTab === 'orders' ? (
-          <OrdersManager />
+          <OrdersManager onSessionExpired={handleLogout} />
         ) : adminTab === 'banners' ? (
           <BannersEditor />
         ) : adminTab === 'instagram' ? (
@@ -873,6 +910,7 @@ export const Admin = () => {
             onDragStart={setDragIdx}
             onDragOver={setDragOverIdx}
             onDrop={handleDragDrop}
+            onBulkUpdate={handleBulkUpdateProducts}
           />
         )}
       </div>
@@ -901,11 +939,51 @@ function formatAdminMoney(value: number) {
   return value.toLocaleString('uk-UA') + ' ₴';
 }
 
+function parseMoney(value: string) {
+  return parseInt(String(value || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
+}
+
+function loadAdminOrders(): Order[] {
+  try {
+    const data = JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || '[]');
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function orderStatusLabel(status: OrderStatus) {
+  const labels: Record<OrderStatus, string> = {
+    new: 'Нові',
+    processing: 'В обробці',
+    shipped: 'Відправлені',
+    delivered: 'Доставлені',
+    cancelled: 'Скасовані',
+  };
+  return labels[status];
+}
+
+function getLaunchDaysLeft() {
+  const launchDate = new Date('2026-06-10T09:00:00+03:00');
+  const now = new Date();
+  const ms = launchDate.getTime() - now.getTime();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
+function percent(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
+}
+
 function AdminDashboard({
   localProducts,
   hasUnsaved,
   onOpenProducts,
   onOpenSections,
+  onOpenAnalytics,
+  onOpenOrders,
+  onOpenBanners,
+  onOpenInstagram,
   onExportProducts,
   onExportProductsCsv,
   onExportReport,
@@ -920,6 +998,10 @@ function AdminDashboard({
   hasUnsaved: boolean;
   onOpenProducts: () => void;
   onOpenSections: () => void;
+  onOpenAnalytics: () => void;
+  onOpenOrders: () => void;
+  onOpenBanners: () => void;
+  onOpenInstagram: () => void;
   onExportProducts: () => void;
   onExportProductsCsv: () => void;
   onExportReport: () => void;
@@ -930,10 +1012,26 @@ function AdminDashboard({
   onExportPdf: () => void;
   onExtractArticles: () => void;
 }) {
+  const [orders, setOrders] = useState<Order[]>(() => loadAdminOrders());
+
+  useEffect(() => {
+    let alive = true;
+    const refreshFromCache = () => setOrders(loadAdminOrders());
+    // Реальні замовлення тягнемо з Worker'а (оновлює кеш); за помилки лишається кеш.
+    fetchOrders().then(res => { if (alive) setOrders(res.orders); }).catch(() => {});
+    window.addEventListener('focus', refreshFromCache);
+    window.addEventListener('storage', refreshFromCache);
+    return () => {
+      alive = false;
+      window.removeEventListener('focus', refreshFromCache);
+      window.removeEventListener('storage', refreshFromCache);
+    };
+  }, []);
+
   const stats = useMemo(() => {
     const categoriesMap = localProducts.reduce<Record<string, { count: number; units: number; value: number }>>((acc, p) => {
       const cat = String(p.category || 'Інше');
-      const price = parseInt(String(p.price || '').replace(/\s/g, '').replace('₴', ''), 10) || 0;
+      const price = priceNumber(p);
       const units = productUnits(p);
       acc[cat] = acc[cat] || { count: 0, units: 0, value: 0 };
       acc[cat].count += 1;
@@ -950,9 +1048,62 @@ function AdminDashboard({
     const totalUnits = localProducts.reduce((sum, p) => sum + productUnits(p), 0);
     const totalValue = categoryRows.reduce((sum, row) => sum + row.value, 0);
     const tagged = localProducts.filter(p => String(p.tag || '').trim()).length;
-    return { categoryRows, noArticle, noImage, noDescription, totalUnits, totalValue, tagged };
+    const withImage = localProducts.length - noImage;
+    const withDescription = localProducts.length - noDescription;
+    const withArticle = localProducts.length - noArticle;
+    const readyScore = Math.round((percent(withImage, localProducts.length) + percent(withDescription, localProducts.length) + percent(withArticle, localProducts.length) + percent(tagged, localProducts.length)) / 4);
+    const issueProducts = localProducts
+      .map(p => ({ product: p, issues: productQualityIssues(p) }))
+      .filter(item => item.issues.length > 0)
+      .sort((a, b) => b.issues.length - a.issues.length || priceNumber(b.product) - priceNumber(a.product))
+      .slice(0, 6);
+    const topValueProducts = [...localProducts]
+      .sort((a, b) => priceNumber(b) * productUnits(b) - priceNumber(a) * productUnits(a))
+      .slice(0, 6);
+    const tagRows = Object.entries(localProducts.reduce<Record<string, number>>((acc, p) => {
+      const tag = String(p.tag || '').trim();
+      if (tag) acc[tag] = (acc[tag] ?? 0) + 1;
+      return acc;
+    }, {})).map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count).slice(0, 8);
+    const priceBands = [
+      { label: 'до 100 ₴', count: localProducts.filter(p => priceNumber(p) <= 100).length },
+      { label: '101-300 ₴', count: localProducts.filter(p => priceNumber(p) > 100 && priceNumber(p) <= 300).length },
+      { label: '301-700 ₴', count: localProducts.filter(p => priceNumber(p) > 300 && priceNumber(p) <= 700).length },
+      { label: '701+ ₴', count: localProducts.filter(p => priceNumber(p) > 700).length },
+    ];
+    return { categoryRows, noArticle, noImage, noDescription, totalUnits, totalValue, tagged, withImage, withDescription, withArticle, readyScore, issueProducts, topValueProducts, tagRows, priceBands };
   }, [localProducts]);
 
+  const orderStats = useMemo(() => {
+    const statusCounts = orders.reduce<Record<OrderStatus, number>>((acc, order) => {
+      acc[order.status] = (acc[order.status] ?? 0) + 1;
+      return acc;
+    }, { new: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 });
+    const activeOrders = orders.filter(order => order.status !== 'cancelled' && order.status !== 'delivered');
+    const paidOrders = orders.filter(order => order.status !== 'cancelled');
+    const revenue = paidOrders.reduce((sum, order) => sum + parseMoney(order.total), 0);
+    const avgOrder = paidOrders.length ? Math.round(revenue / paidOrders.length) : 0;
+    const cities = (Object.entries(orders.reduce<Record<string, number>>((acc, order) => {
+      const city = String(order.customer.city || 'Без міста').trim() || 'Без міста';
+      acc[city] = (acc[city] ?? 0) + 1;
+      return acc;
+    }, {})) as Array<[string, number]>).map(([city, count]) => ({ city, count })).sort((a, b) => b.count - a.count).slice(0, 5);
+    const latest = [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
+    return { statusCounts, activeOrders, revenue, avgOrder, cities, latest };
+  }, [orders]);
+
+  const launch = useMemo(() => {
+    const checks = [
+      { label: 'Каталог наповнений', done: localProducts.length >= 100, hint: `${localProducts.length.toLocaleString('uk-UA')} товарів` },
+      { label: 'Картки мають артикули', done: stats.noArticle === 0, hint: stats.noArticle ? `${stats.noArticle} без артикула` : 'усе ок' },
+      { label: 'Фото товарів готові', done: stats.noImage === 0, hint: stats.noImage ? `${stats.noImage} без фото` : 'усе ок' },
+      { label: 'Опис товарів заповнений', done: stats.noDescription === 0, hint: stats.noDescription ? `${stats.noDescription} без опису` : 'усе ок' },
+      { label: 'Адмінка приймає замовлення', done: true, hint: 'Worker зберігає в KV' },
+      { label: 'Telegram-сповіщення + статуси', done: true, hint: 'кнопки статусів у чаті' },
+    ];
+    const done = checks.filter(item => item.done).length;
+    return { checks, done, score: Math.round((done / checks.length) * 100), daysLeft: getLaunchDaysLeft() };
+  }, [localProducts.length, stats.noArticle, stats.noDescription, stats.noImage]);
 
 
   return (
@@ -961,23 +1112,100 @@ function AdminDashboard({
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-violet-200 mb-2">Lumu admin</p>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight">Дашборд товарів</h1>
-            <p className="text-sm text-white/60 mt-2 max-w-xl">Швидкий зріз каталогу та заповненості карток.</p>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight">Командний центр магазину</h1>
+            <p className="text-sm text-white/70 mt-2 max-w-xl">Онлайн-запуск, замовлення, якість каталогу та швидкі дії в одному місці.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={onExtractArticles} className="px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-400 transition-colors">Витягнути артикули</button>
+            <button onClick={onOpenOrders} className="px-4 py-2 rounded-xl bg-[var(--color-bobo-yellow)] text-black text-sm font-bold hover:brightness-110 transition-colors">Замовлення</button>
+            <button onClick={onOpenAnalytics} className="px-4 py-2 rounded-xl bg-violet-500 text-white text-sm font-bold hover:bg-violet-400 transition-colors">Аналітика</button>
             <button onClick={onOpenProducts} className="px-4 py-2 rounded-xl bg-white text-black text-sm font-bold hover:bg-violet-100 transition-colors">До товарів</button>
-            <button onClick={onOpenSections} className="px-4 py-2 rounded-xl bg-white/10 text-white text-sm font-bold hover:bg-white/15 transition-colors">Розділи сайту</button>
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-violet-700">
+                <CalendarCheck className="w-5 h-5" />
+                <p className="text-xs font-bold uppercase tracking-wider">Launch control</p>
+              </div>
+              <h2 className="text-2xl font-black text-gray-950 mt-2">Онлайн-замовлення: {launch.score}% готовності</h2>
+              <p className="text-sm text-gray-500 mt-1">До запуску 10 червня: {launch.daysLeft} дн.</p>
+            </div>
+            <div className="w-full sm:w-36">
+              <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                <div className="h-full rounded-full bg-violet-600" style={{ width: `${launch.score}%` }} />
+              </div>
+              <p className="text-xs text-gray-400 mt-2">{launch.done}/{launch.checks.length} пунктів закрито</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            {launch.checks.map(item => (
+              <div key={item.label} className={`flex items-start gap-3 rounded-xl border p-3 ${item.done ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : 'border-amber-100 bg-amber-50 text-amber-800'}`}>
+                {item.done ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}
+                <div>
+                  <p className="text-sm font-bold">{item.label}</p>
+                  <p className="text-xs opacity-75 mt-0.5">{item.hint}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Замовлення зараз</h2>
+              <p className="text-sm text-gray-500">реальні замовлення з усіх пристроїв</p>
+            </div>
+            <button onClick={onOpenOrders} className="h-10 px-3 rounded-xl bg-gray-950 text-white text-xs font-bold uppercase tracking-wider hover:bg-gray-800">
+              Відкрити
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <MiniMetric icon={<ShoppingCart className="w-4 h-4" />} label="Усього" value={orders.length.toLocaleString('uk-UA')} />
+            <MiniMetric icon={<Zap className="w-4 h-4" />} label="Активні" value={orderStats.activeOrders.length.toLocaleString('uk-UA')} />
+            <MiniMetric icon={<TrendingUp className="w-4 h-4" />} label="Сума" value={formatAdminMoney(orderStats.revenue)} />
+            <MiniMetric icon={<Target className="w-4 h-4" />} label="Середній чек" value={formatAdminMoney(orderStats.avgOrder)} />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(['new', 'processing', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map(status => (
+              <span key={status} className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
+                {orderStatusLabel(status)}: {orderStats.statusCounts[status]}
+              </span>
+            ))}
+          </div>
+        </section>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardCard label="Товарів" value={localProducts.length.toLocaleString('uk-UA')} hint={`${stats.categoryRows.length} категорій`} />
         <DashboardCard label="Юнітів" value={stats.totalUnits.toLocaleString('uk-UA')} hint="за полем units" />
         <DashboardCard label="Оціночна сума" value={formatAdminMoney(stats.totalValue)} hint="ціна × юніти" />
-        <DashboardCard label="З тегами" value={stats.tagged.toLocaleString('uk-UA')} hint="хіти, акції, новинки" />
+        <DashboardCard label="Readiness" value={`${stats.readyScore}%`} hint="артикули, фото, описи, теги" />
       </div>
+
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Швидкі дії</h2>
+            <p className="text-sm text-gray-500">Найчастіші переходи для щоденної роботи.</p>
+          </div>
+          {hasUnsaved && <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-bold self-start sm:self-auto">є незбережені зміни</span>}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickAction icon={<Package className="w-5 h-5" />} title="Товари" hint="редагування, фільтри, таблиця" onClick={onOpenProducts} />
+          <QuickAction icon={<BarChart3 className="w-5 h-5" />} title="Аналітика" hint="графіки каталогу" onClick={onOpenAnalytics} />
+          <QuickAction icon={<ImageLucide className="w-5 h-5" />} title="Банери" hint="головні промо-блоки" onClick={onOpenBanners} />
+          <QuickAction icon={<Activity className="w-5 h-5" />} title="Instagram" hint="вітрина соцконтенту" onClick={onOpenInstagram} />
+          <QuickAction icon={<FileText className="w-5 h-5" />} title="Розділи сайту" hint="тексти сторінок" onClick={onOpenSections} />
+          <QuickAction icon={<Wand2 className="w-5 h-5" />} title="Артикули" hint="автоочистка назв" onClick={onExtractArticles} />
+          <QuickAction icon={<Download className="w-5 h-5" />} title="Excel" hint="звіт для обліку" onClick={onExportExcel} />
+          <QuickAction icon={<Bot className="w-5 h-5" />} title="Telegram-дублер" hint="канал запуску" onClick={onOpenOrders} />
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -1039,6 +1267,156 @@ function AdminDashboard({
         </section>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Останні замовлення</h2>
+              <p className="text-sm text-gray-500">Короткий CRM-зріз без переходу у вкладку.</p>
+            </div>
+            <Users className="w-5 h-5 text-gray-300" />
+          </div>
+          {orderStats.latest.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400">
+              Замовлень поки немає. Після тестового checkout вони зʼявляться тут.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {orderStats.latest.map(order => (
+                <button
+                  key={order.id}
+                  onClick={onOpenOrders}
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50/70 p-3 text-left transition-all hover:border-violet-200 hover:bg-white hover:shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-gray-900">{order.customer.name} · {order.customer.phone}</p>
+                      <p className="mt-0.5 text-xs text-gray-500">{order.id} · {new Date(order.date).toLocaleString('uk-UA')}</p>
+                    </div>
+                    <span className="shrink-0 text-sm font-black text-gray-900">{order.total}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">{orderStatusLabel(order.status)}</span>
+                    {order.customer.city && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">{order.customer.city}</span>}
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">{order.items.length} позицій</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin className="w-5 h-5 text-violet-600" />
+            <h2 className="text-lg font-bold text-gray-900">Географія</h2>
+          </div>
+          {orderStats.cities.length === 0 ? (
+            <p className="text-sm text-gray-400">Міста зʼявляться після перших замовлень.</p>
+          ) : (
+            <div className="space-y-3">
+              {orderStats.cities.map(city => {
+                const pct = percent(city.count, orders.length);
+                return (
+                  <div key={city.city}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-700">{city.city}</span>
+                      <span className="text-gray-500">{city.count}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(8, pct)}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Потрібна увага</h2>
+              <p className="text-sm text-gray-500">Товари з найбільшою кількістю незаповнених полів.</p>
+            </div>
+            <ClipboardCheck className="w-5 h-5 text-gray-300" />
+          </div>
+          <div className="space-y-3">
+            {stats.issueProducts.length === 0 ? (
+              <div className="rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">Усі картки виглядають готовими.</div>
+            ) : stats.issueProducts.map(({ product, issues }) => (
+              <button key={product.id} onClick={onOpenProducts} className="w-full rounded-xl border border-gray-100 bg-gray-50/70 p-3 text-left hover:border-amber-200 hover:bg-white transition-all">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-gray-900">{productDisplayName(product)}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{product.category} · {product.price}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-black text-amber-800">{issues.length}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {issues.map(issue => <span key={issue} className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-500 border border-gray-100">{issue}</span>)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Топ вартості</h2>
+              <p className="text-sm text-gray-500">Позиції з найбільшою сумою ціна × юніти.</p>
+            </div>
+            <Gauge className="w-5 h-5 text-gray-300" />
+          </div>
+          <div className="space-y-3">
+            {stats.topValueProducts.map((product, index) => {
+              const value = priceNumber(product) * productUnits(product);
+              const max = priceNumber(stats.topValueProducts[0]) * productUnits(stats.topValueProducts[0]) || 1;
+              return (
+                <div key={product.id} className="rounded-xl bg-gray-50/80 p-3">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate font-bold text-gray-800">{index + 1}. {productDisplayName(product)}</span>
+                    <span className="shrink-0 font-black text-gray-950">{formatAdminMoney(value)}</span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-white overflow-hidden">
+                    <div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.max(8, Math.round((value / max) * 100))}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Теги каталогу</h2>
+          <div className="flex flex-wrap gap-2">
+            {stats.tagRows.length === 0 ? (
+              <p className="text-sm text-gray-400">Тегів поки немає.</p>
+            ) : stats.tagRows.map(row => (
+              <span key={row.tag} className="rounded-full bg-violet-50 px-3 py-1.5 text-sm font-bold text-violet-700">
+                {row.tag} · {row.count}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Цінові діапазони</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {stats.priceBands.map(row => (
+              <div key={row.label}>
+                <MiniMetric icon={<Target className="w-4 h-4" />} label={row.label} value={row.count.toLocaleString('uk-UA')} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
       <div className="rounded-2xl border p-4 bg-emerald-50 text-emerald-700 border-emerald-100">
         <p className="text-sm font-bold">Локальний режим</p>
         <p className="text-xs mt-1 opacity-80">Дані зберігаються в браузері (localStorage). Використовуйте «Вигрузити JSON» для резервної копії.</p>
@@ -1054,6 +1432,36 @@ function DashboardCard({ label, value, hint }: { label: string; value: string; h
       <p className="text-2xl font-black text-gray-900 mt-2">{value}</p>
       <p className="text-xs text-gray-500 mt-1">{hint}</p>
     </div>
+  );
+}
+
+function MiniMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-3">
+      <div className="flex items-center gap-2 text-gray-500">
+        {icon}
+        <p className="text-xs font-bold uppercase tracking-wider">{label}</p>
+      </div>
+      <p className="mt-2 text-lg font-black text-gray-950">{value}</p>
+    </div>
+  );
+}
+
+function QuickAction({ icon, title, hint, onClick }: { icon: React.ReactNode; title: string; hint: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex min-h-[108px] flex-col items-start justify-between rounded-2xl border border-gray-200 bg-gray-50/70 p-4 text-left transition-all hover:border-violet-200 hover:bg-white hover:shadow-md"
+    >
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm group-hover:bg-violet-600 group-hover:text-white transition-colors">
+        {icon}
+      </span>
+      <span>
+        <span className="block text-sm font-black text-gray-950">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-gray-500">{hint}</span>
+      </span>
+    </button>
   );
 }
 
@@ -1390,6 +1798,7 @@ function AdminSections({
   onDragStart,
   onDragOver,
   onDrop,
+  onBulkUpdate,
 }: {
   localProducts: Product[];
   imagePreviews?: Record<number, string>;
@@ -1403,6 +1812,7 @@ function AdminSections({
   onDragStart: (idx: number | null) => void;
   onDragOver: (idx: number | null) => void;
   onDrop: (from: number, to: number) => void;
+  onBulkUpdate: (ids: number[], updater: (product: Product) => Product, label: string) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(ADMIN_CATEGORIES.map(c => [c, true]))
@@ -1412,6 +1822,11 @@ function AdminSections({
   const [qualityFilter, setQualityFilter] = useState<ProductQualityFilter>('all');
   const [sortBy, setSortBy] = useState<ProductSortMode>('name');
   const [viewMode, setViewMode] = useState<ProductViewMode>('cards');
+  const [bulkTag, setBulkTag] = useState('Акція');
+  const [bulkCategory, setBulkCategory] = useState(ADMIN_CATEGORIES[0] ?? 'Книги');
+  const [bulkUnits, setBulkUnits] = useState('1');
+  const [bulkPricePercent, setBulkPricePercent] = useState('10');
+  const [bulkDescription, setBulkDescription] = useState('Уточнюйте наявність та деталі у менеджера.');
 
   const categoryOptions = useMemo(() => {
     const values = new Set<string>([...ADMIN_CATEGORIES, ...localProducts.map(p => String(p.category || '').trim() || 'Інше'), 'Інше']);
@@ -1464,6 +1879,39 @@ function AdminSections({
 
   const totalFiltered = useMemo(() => catsToShow.reduce((s, c) => s + (byCategory[c]?.length ?? 0), 0), [catsToShow, byCategory]);
   const hasActiveFilters = search.trim() || categoryFilter !== 'Всі' || qualityFilter !== 'all' || sortBy !== 'name';
+  const visibleProducts = useMemo(() => catsToShow.flatMap(cat => byCategory[cat] ?? []), [catsToShow, byCategory]);
+  const visibleIds = useMemo(() => visibleProducts.map(product => product.id), [visibleProducts]);
+  const canBulk = visibleIds.length > 0;
+  const applyBulkTag = () => {
+    const tag = bulkTag.trim();
+    if (!tag) return;
+    onBulkUpdate(visibleIds, product => ({ ...product, tag }), `Тег «${tag}»`);
+  };
+  const clearBulkTag = () => {
+    onBulkUpdate(visibleIds, product => ({ ...product, tag: '' }), 'Теги очищено');
+  };
+  const applyBulkCategory = () => {
+    onBulkUpdate(visibleIds, product => ({ ...product, category: bulkCategory }), `Категорія «${bulkCategory}»`);
+  };
+  const applyBulkUnits = () => {
+    const units = Math.max(0, parseInt(bulkUnits, 10) || 0);
+    onBulkUpdate(visibleIds, product => ({ ...product, units }), `Юніти ${units}`);
+  };
+  const applyPricePercent = (direction: 1 | -1) => {
+    const pct = Math.max(0, parseFloat(bulkPricePercent.replace(',', '.')) || 0);
+    if (!pct) return;
+    onBulkUpdate(visibleIds, product => {
+      const current = priceNumber(product);
+      const next = Math.max(0, Math.round(current * (1 + direction * pct / 100)));
+      return { ...product, price: formatAdminMoney(next) };
+    }, direction > 0 ? `Ціну піднято на ${pct}%` : `Ціну знижено на ${pct}%`);
+  };
+  const applyDescriptionToEmpty = () => {
+    const ids = visibleProducts.filter(product => !String(product.description ?? '').trim()).map(product => product.id);
+    const description = bulkDescription.trim();
+    if (!description) return;
+    onBulkUpdate(ids, product => ({ ...product, description }), 'Опис додано в порожні картки');
+  };
 
   return (
     <div className="space-y-5">
@@ -1564,6 +2012,75 @@ function AdminSections({
           </div>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4 shadow-sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-violet-700">
+                <Wand2 className="w-5 h-5" />
+                <h2 className="text-lg font-black text-gray-950">Масові дії над поточною видачею</h2>
+              </div>
+              <p className="mt-1 text-sm text-gray-600">
+                Застосовується до {visibleIds.length.toLocaleString('uk-UA')} товарів, які зараз показані фільтрами.
+              </p>
+            </div>
+            <span className={`self-start lg:self-auto rounded-full px-3 py-1 text-xs font-bold ${canBulk ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+              {canBulk ? 'готово до дії' : 'немає товарів'}
+            </span>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-4">
+            <div className="rounded-xl border border-white/70 bg-white p-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Тег</label>
+              <div className="flex gap-2">
+                <select value={bulkTag} onChange={e => setBulkTag(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500">
+                  {TAG_PRESETS.filter(Boolean).map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                </select>
+                <button type="button" disabled={!canBulk} onClick={applyBulkTag} className="rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">OK</button>
+              </div>
+              <button type="button" disabled={!canBulk} onClick={clearBulkTag} className="mt-2 text-xs font-bold text-gray-500 hover:text-red-600 disabled:opacity-40">Очистити теги у видачі</button>
+            </div>
+
+            <div className="rounded-xl border border-white/70 bg-white p-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Категорія</label>
+              <div className="flex gap-2">
+                <select value={bulkCategory} onChange={e => setBulkCategory(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500">
+                  {ADMIN_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+                <button type="button" disabled={!canBulk} onClick={applyBulkCategory} className="rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">OK</button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/70 bg-white p-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Юніти</label>
+              <div className="flex gap-2">
+                <input value={bulkUnits} onChange={e => setBulkUnits(e.target.value)} inputMode="numeric" className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500" />
+                <button type="button" disabled={!canBulk} onClick={applyBulkUnits} className="rounded-lg bg-gray-950 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">OK</button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/70 bg-white p-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Ціна, %</label>
+              <div className="flex gap-2">
+                <input value={bulkPricePercent} onChange={e => setBulkPricePercent(e.target.value)} inputMode="decimal" className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500" />
+                <button type="button" disabled={!canBulk} onClick={() => applyPricePercent(1)} className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">+%</button>
+                <button type="button" disabled={!canBulk} onClick={() => applyPricePercent(-1)} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">-%</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/70 bg-white p-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Опис для порожніх карток у поточній видачі</label>
+            <div className="grid gap-2 lg:grid-cols-[1fr_auto]">
+              <input value={bulkDescription} onChange={e => setBulkDescription(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500" />
+              <button type="button" disabled={!canBulk} onClick={applyDescriptionToEmpty} className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-40">
+                Заповнити порожні
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {totalFiltered === 0 && (
         <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white py-14 px-6 text-center">

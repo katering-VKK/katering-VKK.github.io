@@ -6,6 +6,13 @@ coverage/
 *.log
 .env*
 !.env.example
+!.env.production
 .env.admin
 .vercel
 *.xlsx
+
+# Cloudflare Worker — локальні секрети та стан (НЕ комітити)
+.dev.vars
+**/.dev.vars
+.wrangler/
+**/.wrangler/

@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import { useProducts, parsePrice } from '../context/ProductsContext';
 import { isValidEmail, isValidUAPhone, formatPhoneForSubmit } from '../utils/validation';
 import { productDisplayName } from '../utils/productImport';
+import { sendOrderToApi, type CheckoutOrderPayload } from '../utils/orderDelivery';
 
 function formatPrice(n: number) {
   return n.toLocaleString('uk-UA') + ' ₴';
@@ -39,16 +40,7 @@ const initialForm: FormData = {
 
 const ORDERS_KEY = 'lumu_admin_orders';
 
-interface LocalOrder {
-  id: string;
-  date: string;
-  customer: { name: string; phone: string; email?: string; city?: string; address?: string; comment?: string };
-  items: { productId: number; name: string; price: string; qty: number }[];
-  total: string;
-  status: 'new';
-}
-
-function saveOrderLocally(order: LocalOrder): { ok: boolean; error?: string } {
+function saveOrderLocally(order: CheckoutOrderPayload): { ok: boolean; error?: string } {
   try {
     const existing = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
     existing.unshift(order);
@@ -112,7 +104,7 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
       return { productId: p.id, name: productDisplayName(p), price: p.price, qty };
     });
     const deliveryLabel = DELIVERY_OPTIONS.find(d => d.id === form.delivery)?.label ?? form.delivery;
-    const order: LocalOrder = {
+    const order: CheckoutOrderPayload = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       date: new Date().toISOString(),
       customer: {
@@ -123,14 +115,30 @@ export const CheckoutForm = ({ onBack, onSuccess }: { onBack: () => void; onSucc
         address: form.delivery !== 'self' ? form.address.trim() : undefined,
         comment: form.comment.trim() || undefined,
       },
+      delivery: {
+        id: form.delivery,
+        label: deliveryLabel,
+      },
       items: orderItems,
       total: cartTotal,
       status: 'new',
     };
-    const result = saveOrderLocally(order);
+
+    const localResult = saveOrderLocally(order);
+    if (!localResult.ok) {
+      setLoading(false);
+      setErrors({ name: localResult.error || 'Помилка збереження. Спробуйте ще раз.' });
+      return;
+    }
+
+    const apiResult = await sendOrderToApi(order);
     setLoading(false);
-    if (result.ok) onSuccess();
-    else setErrors({ name: result.error || 'Помилка збереження. Спробуйте ще раз.' });
+    if (apiResult.ok) onSuccess();
+    else {
+      setErrors({
+        name: `Замовлення збережено локально, але Telegram/API не відповів: ${apiResult.error || 'невідома помилка'}`,
+      });
+    }
   };
 
   return (

@@ -1,0 +1,18 @@
+name = "katering-orders"
+main = "orders-worker.js"
+compatibility_date = "2024-11-01"
+
+# KV-сховище замовлень. Створи namespace і встав сюди його id:
+#   cd worker
+#   npx wrangler kv namespace create ORDERS
+# Команда виведе id — встав його нижче замість REPLACE_WITH_KV_NAMESPACE_ID.
+# (Для `wrangler dev` локально id не використовується — там своє локальне KV.)
+[[kv_namespaces]]
+binding = "ORDERS_KV"
+id = "294c25bd58944f59b12d70f677eebe17"
+
+# Секрети задаються окремо, НЕ тут (щоб не потрапили в git):
+#   wrangler secret put TELEGRAM_BOT_TOKEN       # токен бота з BotFather
+#   wrangler secret put TELEGRAM_CHAT_ID         # numeric chat id
+#   wrangler secret put ADMIN_PASSWORD           # пароль адмінки (звіряється на сервері)
+#   wrangler secret put TELEGRAM_WEBHOOK_SECRET  # довільний рядок для захисту вебхука
