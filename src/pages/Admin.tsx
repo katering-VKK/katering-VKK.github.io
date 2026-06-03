@@ -265,13 +265,14 @@ export const Admin = () => {
   const { showToast } = useStore();
   const [auth, setAuth] = useState<{ token: string } | null>(() => {
     try {
-      const s = sessionStorage.getItem(ADMIN_KEY);
+      const s = localStorage.getItem(ADMIN_KEY) || sessionStorage.getItem(ADMIN_KEY);
       return s ? JSON.parse(s) : null;
     } catch {
       return null;
     }
   });
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(() => localStorage.getItem(ADMIN_KEY + '_remember') === '1');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -369,13 +370,13 @@ export const Admin = () => {
     setLoginError('');
     setLoginLoading(true);
 
-    // Dev-фолбек: коли API не налаштовано локально (vite dev). У прод-збірці
-    // import.meta.env.DEV === false, тож ця гілка та пароль вирізаються з бандла.
     if (import.meta.env.DEV && !adminApiBase()) {
       await new Promise(r => setTimeout(r, 200));
       if (value === DEV_FALLBACK_PASSWORD) {
         const token = 'dev-' + Date.now();
-        sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token }));
+        const store = remember ? localStorage : sessionStorage;
+        store.setItem(ADMIN_KEY, JSON.stringify({ token }));
+        localStorage.setItem(ADMIN_KEY + '_remember', remember ? '1' : '0');
         setAuth({ token });
         setPassword('');
       } else {
@@ -387,7 +388,9 @@ export const Admin = () => {
 
     const result = await adminLogin(value);
     if (result.ok && result.token) {
-      sessionStorage.setItem(ADMIN_KEY, JSON.stringify({ token: result.token }));
+      const store = remember ? localStorage : sessionStorage;
+      store.setItem(ADMIN_KEY, JSON.stringify({ token: result.token }));
+      localStorage.setItem(ADMIN_KEY + '_remember', remember ? '1' : '0');
       setAuth({ token: result.token });
       setPassword('');
     } else {
@@ -397,6 +400,7 @@ export const Admin = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem(ADMIN_KEY);
     sessionStorage.removeItem(ADMIN_KEY);
     setAuth(null);
     setEditing(null);
@@ -710,6 +714,15 @@ export const Admin = () => {
               autoFocus
             />
             {loginError && <p className="text-sm text-red-500">{loginError}</p>}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div
+                onClick={() => setRemember(v => !v)}
+                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${remember ? 'bg-violet-600 border-violet-600' : 'border-gray-300 bg-white'}`}
+              >
+                {remember && <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <span className="text-sm text-gray-600">Запам'ятати мене</span>
+            </label>
             <button
               type="submit"
               disabled={loginLoading}
@@ -720,7 +733,7 @@ export const Admin = () => {
             </button>
           </form>
           <p className="mt-4 text-xs text-gray-400 text-center">
-            Локальна адмін-панель
+            Адмін-панель
           </p>
         </div>
       </div>

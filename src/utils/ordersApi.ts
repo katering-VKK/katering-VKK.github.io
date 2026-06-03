@@ -13,7 +13,7 @@ export function adminApiBase(): string {
 /** Сесійний токен з sessionStorage (порожній рядок, якщо немає). */
 export function getAdminToken(): string {
   try {
-    const raw = sessionStorage.getItem(ADMIN_KEY);
+    const raw = localStorage.getItem(ADMIN_KEY) || sessionStorage.getItem(ADMIN_KEY);
     if (!raw) return '';
     const data = JSON.parse(raw);
     return typeof data?.token === 'string' ? data.token : '';
