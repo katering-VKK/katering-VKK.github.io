@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle, ArrowUpDown, Eye, FileWarning, Filter, ImageIcon, LayoutGrid, List, Pencil, PackageCheck, GripVertical, Undo2, Redo2, Package, Image as ImageLucide, ShoppingCart, Activity, Bot, CalendarCheck, ClipboardCheck, Gauge, MapPin, Target, TrendingUp, Users, Wand2, Zap } from 'lucide-react';
+import { Lock, Save, Plus, Trash2, X, Loader2, LogOut, ChevronDown, ChevronRight, BookOpen, Gamepad2, Palette, Sparkles, Dice5, ExternalLink, Search, CheckCircle, FileText, Download, Upload, BarChart3, AlertTriangle, ArrowUpDown, Eye, FileWarning, Filter, ImageIcon, LayoutGrid, List, Pencil, PackageCheck, GripVertical, Undo2, Redo2, Package, Image as ImageLucide, ShoppingCart, Activity, Bot, CalendarCheck, ClipboardCheck, Gauge, MapPin, Target, TrendingUp, Users, Wand2, Zap, History, RefreshCw, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useSiteContent } from '../context/SiteContentContext';
@@ -29,8 +29,18 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 
 const ADMIN_KEY = 'lumu_admin';
 const PRODUCTS_STORAGE_KEY = 'lumu_admin_products';
+const SNAPSHOTS_STORAGE_KEY = 'lumu_admin_snapshots';
+const MAX_SNAPSHOTS = 15;
 const SITE_CONTENT_STORAGE_KEY = 'lumu_admin_site_content';
 const ORDERS_STORAGE_KEY = 'lumu_admin_orders';
+
+interface ProductSnapshot {
+  id: string;
+  label: string;
+  timestamp: number;
+  count: number;
+  products: Product[];
+}
 // Пароль адмінки більше НЕ зберігається в коді сайту — звіряється на Cloudflare Worker
 // (POST /login → сесійний токен). Локальний фолбек нижче працює лише в dev-режимі.
 const DEV_FALLBACK_PASSWORD = 'dev';
@@ -281,6 +291,13 @@ export const Admin = () => {
 
   const [localProducts, setLocalProducts] = useState<Product[]>([]);
   const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'sections' | 'analytics' | 'orders' | 'banners' | 'instagram'>('dashboard');
+
+  // version snapshots
+  const [snapshots, setSnapshots] = useState<ProductSnapshot[]>(() => {
+    try { const s = localStorage.getItem(SNAPSHOTS_STORAGE_KEY); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [showVersionPanel, setShowVersionPanel] = useState(false);
+  const [snapshotLabel, setSnapshotLabel] = useState('');
 
   // undo/redo history
   const [history, setHistory] = useState<Product[][]>([]);
@@ -668,12 +685,96 @@ export const Admin = () => {
     reader.readAsText(file, 'UTF-8');
   };
 
+  const persistSnapshot = useCallback((label: string, payload: Product[]) => {
+    const snap: ProductSnapshot = {
+      id: Date.now().toString(),
+      label,
+      timestamp: Date.now(),
+      count: payload.length,
+      products: payload,
+    };
+    setSnapshots(prev => {
+      const next = [snap, ...prev].slice(0, MAX_SNAPSHOTS);
+      localStorage.setItem(SNAPSHOTS_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+    return snap;
+  }, []);
+
+  const handleCreateSnapshot = useCallback(() => {
+    const label = snapshotLabel.trim() ||
+      new Date().toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const payload = productExportPayload(localProducts);
+    persistSnapshot(label, payload);
+    setSnapshotLabel('');
+    showToast(`Знімок «${label}» збережено`);
+  }, [localProducts, snapshotLabel, persistSnapshot]);
+
+  const handleRestoreSnapshot = useCallback((snap: ProductSnapshot) => {
+    if (!confirm(`Відновити версію «${snap.label}» (${snap.count} товарів)?\nПоточні зміни будуть перезаписані.`)) return;
+    pushHistory(localProducts);
+    hasLocalChangesRef.current = true;
+    const restored = snap.products as Product[];
+    setLocalProducts(restored);
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(restored));
+    skipSyncRef.current = true;
+    showToast(`Відновлено версію «${snap.label}»`);
+    setShowVersionPanel(false);
+  }, [localProducts, pushHistory]);
+
+  const handleDeleteSnapshot = useCallback((id: string) => {
+    setSnapshots(prev => {
+      const next = prev.filter(s => s.id !== id);
+      localStorage.setItem(SNAPSHOTS_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const handleDownloadSnapshot = useCallback((snap: ProductSnapshot) => {
+    const date = new Date(snap.timestamp).toISOString().slice(0, 10);
+    downloadAdminFile(JSON.stringify(snap.products, null, 2), `snapshot-${date}-${snap.count}items.json`, 'application/json;charset=utf-8');
+  }, []);
+
+  const handleDuplicateProduct = useCallback((product: Product) => {
+    pushHistory(localProducts);
+    hasLocalChangesRef.current = true;
+    const maxId = localProducts.reduce((m, p) => Math.max(m, p.id), 0);
+    const copy: Product = { ...product, id: maxId + 1, name: product.name + ' (копія)' };
+    const idx = localProducts.findIndex(p => p.id === product.id);
+    setLocalProducts(prev => {
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+    setNewProductIds(prev => new Set(prev).add(copy.id));
+    showToast(`Дубльовано: «${productDisplayName(product)}»`);
+  }, [localProducts, pushHistory]);
+
+  const handleClearAll = useCallback(() => {
+    if (!confirm(`Видалити всі ${localProducts.length} товарів? Відновити можна через «Версії» або undo.`)) return;
+    pushHistory(localProducts);
+    hasLocalChangesRef.current = true;
+    setLocalProducts([]);
+    showToast('Усі товари видалено. Натисніть «Зберегти» щоб підтвердити.');
+  }, [localProducts, pushHistory]);
+
+  const handleResetToServer = useCallback(async () => {
+    if (!confirm('Перезавантажити товари з сервера? Локальні зміни будуть втрачені.')) return;
+    localStorage.removeItem(PRODUCTS_STORAGE_KEY);
+    hasLocalChangesRef.current = false;
+    skipSyncRef.current = false;
+    await refetch();
+    showToast('Товари перезавантажено з сервера');
+  }, [refetch]);
+
   const handleSaveAll = async () => {
     if (saving) return;
     setSaveError('');
     setSaving(true);
     try {
       const payload = productExportPayload(localProducts);
+      const label = new Date().toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+      persistSnapshot(label, payload);
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(payload));
       setNewProductIds(new Set());
       skipSyncRef.current = true;
@@ -796,6 +897,18 @@ export const Admin = () => {
                     <Redo2 className="w-4 h-4" />
                   </button>
                   <button
+                    onClick={() => setShowVersionPanel(true)}
+                    title="Контроль версій та відкат"
+                    className="relative p-2 rounded-lg border border-gray-200 hover:bg-violet-50 hover:border-violet-200 transition-all"
+                  >
+                    <History className="w-4 h-4 text-violet-600" />
+                    {snapshots.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold bg-violet-600 text-white rounded-full flex items-center justify-center">
+                        {snapshots.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
                     onClick={handleSaveAll}
                     disabled={saving}
                     className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 hover:bg-gray-800 transition-colors"
@@ -861,9 +974,119 @@ export const Admin = () => {
               Автозавантажити товари
               <input ref={importInputRef} type="file" accept=".json,.csv,.txt,application/json,text/csv,text/plain" className="hidden" onChange={handleImportProducts} />
             </label>
-
+            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <button onClick={handleResetToServer} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100">
+              <RefreshCw className="w-4 h-4" />
+              Скинути на сервер
+            </button>
+            <button onClick={handleClearAll} className="flex items-center gap-2 text-sm text-red-600 hover:text-red-800 px-3 py-2 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100">
+              <Trash2 className="w-4 h-4" />
+              Очистити все
+            </button>
           </div>
         )}
+
+        <AnimatePresence>
+          {showVersionPanel && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-start justify-end bg-black/40 backdrop-blur-sm p-4"
+              onClick={e => { if (e.target === e.currentTarget) setShowVersionPanel(false); }}
+            >
+              <motion.div
+                initial={{ x: 60, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 60, opacity: 0 }}
+                transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+                className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col max-h-[90vh]"
+              >
+                <div className="flex items-center justify-between p-5 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5 text-violet-600" />
+                    <h2 className="font-bold text-gray-900">Контроль версій</h2>
+                    <span className="text-xs px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full">{snapshots.length}/{MAX_SNAPSHOTS}</span>
+                  </div>
+                  <button onClick={() => setShowVersionPanel(false)} className="p-1.5 rounded-lg hover:bg-gray-100">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-4 border-b border-gray-100 space-y-2">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Новий знімок</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={snapshotLabel}
+                      onChange={e => setSnapshotLabel(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleCreateSnapshot(); }}
+                      placeholder={`Назва (авто: ${new Date().toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
+                      className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    />
+                    <button
+                      onClick={handleCreateSnapshot}
+                      className="px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shrink-0"
+                    >
+                      Зберегти
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400">Поточний стан: {localProducts.length} товарів</p>
+                </div>
+
+                <div className="overflow-y-auto flex-1 p-4 space-y-2">
+                  {snapshots.length === 0 && (
+                    <div className="text-center py-8 text-gray-400 text-sm">
+                      <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                      Знімків ще немає. Зробіть перший знімок або натисніть «Зберегти».
+                    </div>
+                  )}
+                  {snapshots.map((snap, idx) => (
+                    <div key={snap.id} className="group flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-violet-200 hover:bg-violet-50/50 transition-all">
+                      <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0 text-xs font-bold text-violet-700">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{snap.label}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {new Date(snap.timestamp).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })} · {snap.count} товарів
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button
+                          onClick={() => handleDownloadSnapshot(snap)}
+                          title="Завантажити JSON"
+                          className="w-7 h-7 rounded-lg hover:bg-violet-100 flex items-center justify-center text-violet-600"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSnapshot(snap.id)}
+                          title="Видалити знімок"
+                          className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center text-red-400 hover:text-red-600"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRestoreSnapshot(snap)}
+                          title="Відновити цю версію"
+                          className="px-2 h-7 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-colors"
+                        >
+                          Відкат
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-400 text-center">
+                    Знімки зберігаються локально. Максимум {MAX_SNAPSHOTS} версій.
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {adminTab === 'dashboard' ? (
           <AdminDashboard
@@ -916,6 +1139,7 @@ export const Admin = () => {
             newProductIds={newProductIds}
             onEdit={setEditing}
             onDelete={handleDeleteProduct}
+            onDuplicate={handleDuplicateProduct}
             onAdd={handleAddProduct}
             getProductGradient={getProductGradient}
             dragIdx={dragIdx}
@@ -1804,6 +2028,7 @@ function AdminSections({
   newProductIds = new Set(),
   onEdit,
   onDelete,
+  onDuplicate,
   onAdd,
   getProductGradient,
   dragIdx,
@@ -1818,6 +2043,7 @@ function AdminSections({
   newProductIds?: Set<number>;
   onEdit: (p: Product) => void;
   onDelete: (id: number, name?: string) => void;
+  onDuplicate: (p: Product) => void;
   onAdd: (category: string) => void;
   getProductGradient: (id: number, category: string) => string;
   dragIdx: number | null;
@@ -2168,6 +2394,7 @@ function AdminSections({
                         newProductIds={newProductIds}
                         onEdit={onEdit}
                         onDelete={onDelete}
+                        onDuplicate={onDuplicate}
                       />
                     ) : (
                       <div className="grid gap-3 lg:grid-cols-2">
@@ -2198,6 +2425,7 @@ function AdminSections({
                                 gradient={getProductGradient(product.id, product.category)}
                                 onEdit={onEdit}
                                 onDelete={onDelete}
+                                onDuplicate={onDuplicate}
                               />
                             </div>
                           );
@@ -2230,13 +2458,14 @@ function QualityButton({ active, icon, label, value, onClick }: { active: boolea
   );
 }
 
-function ProductAdminCard({ product, productForDisplay, isNew, gradient, onEdit, onDelete }: {
+function ProductAdminCard({ product, productForDisplay, isNew, gradient, onEdit, onDelete, onDuplicate }: {
   product: Product;
   productForDisplay: Product;
   isNew: boolean;
   gradient: string;
   onEdit: (p: Product) => void;
   onDelete: (id: number, name?: string) => void;
+  onDuplicate: (p: Product) => void;
 }) {
   const issues = productQualityIssues(product);
   return (
@@ -2270,8 +2499,18 @@ function ProductAdminCard({ product, productForDisplay, isNew, gradient, onEdit,
                 onClick={e => { e.stopPropagation(); onEdit(product); }}
                 className="w-9 h-9 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-violet-700 hover:border-violet-200 flex items-center justify-center"
                 aria-label="Редагувати товар"
+                title="Редагувати"
               >
                 <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onDuplicate(product); }}
+                className="w-9 h-9 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-emerald-700 hover:border-emerald-200 flex items-center justify-center"
+                aria-label="Дублювати товар"
+                title="Дублювати"
+              >
+                <Copy className="w-4 h-4" />
               </button>
               <button
                 type="button"
@@ -2299,12 +2538,13 @@ function ProductAdminCard({ product, productForDisplay, isNew, gradient, onEdit,
   );
 }
 
-function ProductAdminTable({ products, imagePreviews, newProductIds, onEdit, onDelete }: {
+function ProductAdminTable({ products, imagePreviews, newProductIds, onEdit, onDelete, onDuplicate }: {
   products: Product[];
   imagePreviews: Record<number, string>;
   newProductIds: Set<number>;
   onEdit: (p: Product) => void;
   onDelete: (id: number, name?: string) => void;
+  onDuplicate: (p: Product) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -2363,14 +2603,25 @@ function ProductAdminTable({ products, imagePreviews, newProductIds, onEdit, onD
                       onClick={e => { e.stopPropagation(); onEdit(product); }}
                       className="w-9 h-9 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-violet-700 hover:border-violet-200 inline-flex items-center justify-center"
                       aria-label="Редагувати товар"
+                      title="Редагувати"
                     >
                       <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); onDuplicate(product); }}
+                      className="w-9 h-9 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-emerald-700 hover:border-emerald-200 inline-flex items-center justify-center"
+                      aria-label="Дублювати товар"
+                      title="Дублювати"
+                    >
+                      <Copy className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={e => { e.stopPropagation(); onDelete(product.id, product.name); }}
                       className="w-9 h-9 rounded-lg border border-gray-200 bg-white text-red-500 hover:bg-red-50 hover:border-red-100 inline-flex items-center justify-center"
                       aria-label="Видалити товар"
+                      title="Видалити"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
